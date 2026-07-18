@@ -75,4 +75,4 @@ sie brauchen weder DB noch API.
 - **Phase 2:** Sprachnachrichten (faster-whisper), Erinnerungen, `update_item`.
 - **Phase 3:** täglicher Digest, wöchentliches Review, Web-Dashboard, Kalender.
 
-Siehe den vollständigen Plan im Projekt-Planungsdokument.
+Siehe den vollständigen Plan in [PLAN.md](PLAN.md).
