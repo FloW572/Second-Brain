@@ -1,0 +1,5 @@
+python-telegram-bot>=21.6,<22
+anthropic>=0.42
+psycopg[binary,pool]>=3.2
+sentence-transformers>=3.0
+pydantic-settings>=2.5
