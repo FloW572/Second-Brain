@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     # Daily digest: local hour (0-23) to send the morning summary; outside 0-23 = off
     digest_hour: int = 8
 
+    # Weekly review: weekday (0=Mon .. 6=Sun) + local hour; invalid values = off
+    review_weekday: int = 6
+    review_hour: int = 18
+
     @property
     def allowed_user_ids(self) -> set[int]:
         return {int(x.strip()) for x in self.allowed_telegram_user_ids.split(",") if x.strip()}
