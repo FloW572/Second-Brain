@@ -149,7 +149,9 @@ Neu-Einbetten aller Items.
       eigener Loop zur `DIGEST_HOUR`, einmal täglich); auch on-demand via `/digest`
 - [x] **Wöchentliches Review** — proaktiver Wochenrückblick + Fokus-Vorschlag (`app/digest.py`,
       eigener Loop zu `REVIEW_WEEKDAY`/`REVIEW_HOUR`); auch on-demand via `/review`
-- [ ] **Web-Dashboard** — Items browsen, editieren, filtern
+- [x] **Web-Dashboard** — FastAPI-Oberfläche (`app/web/`, eigener Compose-Service auf Port 8001):
+      Items browsen/filtern, semantische Suche, bearbeiten/erledigen/löschen; nutzt dieselben
+      Tool-Handler wie der Bot
 - [ ] **Kalender-Integration** — Fälligkeiten als Termine
 
 > Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über

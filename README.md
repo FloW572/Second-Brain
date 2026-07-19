@@ -82,6 +82,16 @@ Schreib **oder sprich** deinem Bot in Telegram:
 - `Setz "KFZ-Versicherung kündigen" auf hohe Priorität` → bearbeitet den Eintrag
 - `Lösche das Todo #7` → löscht den Eintrag
 
+## Web-Dashboard
+Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
+**[http://localhost:8001](http://localhost:8001)**:
+- alle Einträge browsen und nach Typ filtern
+- semantische Suche (dieselbe hybride Suche wie im Bot)
+- Einträge **bearbeiten, erledigen, löschen** per Klick
+
+Sie liest dieselbe Datenbank und nutzt dieselben Aktions-Handler wie der Bot — beide
+Oberflächen bleiben also konsistent. (Host-Port 8001, falls 8000 belegt ist.)
+
 ## Datenbank inspizieren
 ```bash
 docker compose exec db psql -U secondbrain -d secondbrain -c \
@@ -118,6 +128,7 @@ sie brauchen weder DB noch API.
 - **Phase 1 (fertig):** Erfassen, hybride Suche, agentische Abfragen, Docker.
 - **Phase 2 (fertig):** Sprachnachrichten, Uhrzeiten (`TIMESTAMPTZ`), Erinnerungen,
   `update_item` / `delete_item`, robusteres Routing.
-- **Phase 3:** täglicher Digest, wöchentliches Review, Web-Dashboard, Kalender.
+- **Phase 3 (läuft):** Konversations-Gedächtnis ✓, täglicher Digest ✓, wöchentliches Review ✓,
+  Web-Dashboard ✓; offen: Kalender-Integration.
 
 Siehe den vollständigen Plan in [PLAN.md](PLAN.md).
