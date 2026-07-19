@@ -140,10 +140,16 @@ Neu-Einbetten aller Items.
 
 ### 🔮 Phase 3 — Proaktiv & Oberfläche
 
+- [ ] **Konversations-Gedächtnis** — der Query-Agent merkt sich die letzten Austausche
+      pro Chat, sodass Folgefragen (z.B. „und diese Woche?") den Kontext behalten.
+      Aktuell startet `answer()` bei jeder Nachricht ohne Verlauf.
 - [ ] **Täglicher Digest** — morgendliche Zusammenfassung/Priorisierung
 - [ ] **Wöchentliches Review** — offene Punkte, liegen gebliebene Ideen
 - [ ] **Web-Dashboard** — Items browsen, editieren, filtern
 - [ ] **Kalender-Integration** — Fälligkeiten als Termine
+
+> Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
+> den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
 
 ---
 
