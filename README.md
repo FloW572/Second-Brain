@@ -161,6 +161,45 @@ sie brauchen weder DB noch API.
   Anthropic-API. Es muss für den API-Key freigeschaltet sein und kostet pro Suche ein paar Cent —
   wird aber **nur** beim Anreichern ausgelöst, normale Abfragen bleiben suchfrei.
 
+## Datenschutz — was verlässt den Rechner?
+Selbst gehostet heißt hier: **Ablage, Suche, Embeddings und Spracherkennung laufen lokal** — das
+Reasoning (Claude) nutzt aber die Anthropic-Cloud. Es ist also „self-hosted für die Ablage", nicht
+„offline".
+
+**Bleibt lokal (geht nie an Anthropic):**
+
+| Daten | Wo |
+|---|---|
+| Audio von Sprachnachrichten | lokal transkribiert (faster-whisper); die Audiodatei verlässt den Rechner nie |
+| Embeddings | lokal erzeugt (bge-m3) |
+| Dokumente/Fotos | nur im Volume `docdata` + Metadaten in der DB; der Inhalt wird nie an Claude gesendet |
+| Datenbank & Suche | Postgres + Vektor-/Volltextsuche laufen lokal |
+| `.env` (API-Key, Bot-Token) | lokal, nicht im Image, nicht im Repo |
+
+**Geht an Anthropic (Text, über HTTPS):**
+
+| Wann | Was gesendet wird |
+|---|---|
+| jede Nachricht | voller Text bzw. Transkript → Router (Haiku) |
+| beim Erfassen | zusätzlich der Text → Extraktion (Haiku) |
+| bei Fragen | deine Frage **+ die per Tools gelesenen Einträge** (Titel/Inhalt/Fälligkeit/Projekt/Tags) → Reasoning (Opus) |
+| Digest & Review | lesen Einträge und senden sie an Anthropic — **nur wenn aktiviert** (`DIGEST_ENABLED` / `REVIEW_ENABLED`) |
+| Anreicherung | der Eintrag **+ eine Websuche** (läuft server-seitig bei Anthropic und fragt das öffentliche Web) |
+
+Kurz: Sobald Claude antwortet, fließen die **abgefragten Notizinhalte** als Kontext zu Anthropic;
+die Anreicherung geht zusätzlich ins öffentliche Web.
+
+**Sicherheit & Hinweise:**
+- Transport ist TLS-verschlüsselt. Nach Anthropics kommerziellen API-Bedingungen werden API-Daten
+  standardmäßig **nicht zum Modelltraining** verwendet (begrenzte Aufbewahrung zur
+  Missbrauchserkennung; Zero-Data-Retention auf Anfrage möglich) — Details in Anthropics aktueller
+  Data-Policy.
+- **Proaktive Briefings sind opt-in** (`DIGEST_ENABLED` / `REVIEW_ENABLED`, Default aus) — ohne dein
+  Zutun geht dadurch nichts an Anthropic.
+- **Das Web-Dashboard hat keine Authentifizierung** — nur für localhost/vertrauenswürdiges Netz
+  gedacht; nicht offen ins Internet stellen (sonst Reverse-Proxy mit Login oder VPN davorschalten).
+- Der Bot ist **deny-by-default** (nur deine Telegram-User-ID darf ihn nutzen).
+
 ## Roadmap
 - **Phase 1 (fertig):** Erfassen, hybride Suche, agentische Abfragen, Docker.
 - **Phase 2 (fertig):** Sprachnachrichten, Uhrzeiten (`TIMESTAMPTZ`), Erinnerungen,
