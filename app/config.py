@@ -32,13 +32,15 @@ class Settings(BaseSettings):
 
     # Proactive briefings: explicit on/off switches for the scheduled loops.
     # Turning these off does NOT disable the manual /digest and /review commands.
-    digest_enabled: bool = True
-    review_enabled: bool = True
+    digest_enabled: bool = False
+    review_enabled: bool = False
 
-    # Daily digest: local hour (0-23) to send the morning summary; outside 0-23 = off
+    # Daily digest: local hour in 24h format (0-23) for the morning summary.
+    # On/off is controlled by digest_enabled above, not by this value.
     digest_hour: int = 8
 
-    # Weekly review: weekday (0=Mon .. 6=Sun) + local hour; invalid values = off
+    # Weekly review: weekday (0=Mon .. 6=Sun) + local hour in 24h format (0-23).
+    # On/off is controlled by review_enabled above, not by these values.
     review_weekday: int = 6
     review_hour: int = 18
 
