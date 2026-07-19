@@ -51,6 +51,25 @@ async def list_documents(pool, project_id) -> list[dict]:
              "size_display": human_size(r[3])} for r in rows]
 
 
+async def list_all_documents(pool) -> list[dict]:
+    """Every document with its project name (project_id=None -> unassigned)."""
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            "SELECT d.id, d.filename, d.content_type, d.size_bytes, d.project_id, p.name "
+            "FROM documents d LEFT JOIN projects p ON p.id = d.project_id "
+            "ORDER BY p.name NULLS FIRST, d.created_at DESC"
+        )
+        rows = await cur.fetchall()
+    return [{"id": r[0], "filename": r[1], "content_type": r[2], "size_display": human_size(r[3]),
+             "project_id": r[4], "project_name": r[5]} for r in rows]
+
+
+async def set_document_project(pool, doc_id: int, project_id: int | None) -> None:
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute("UPDATE documents SET project_id = %s WHERE id = %s", (project_id, doc_id))
+        await conn.commit()
+
+
 async def get_document(pool, doc_id: int) -> dict | None:
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(

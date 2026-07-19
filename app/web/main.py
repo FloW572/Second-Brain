@@ -14,7 +14,15 @@ from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
 from app.db import close_pool, init_pool
-from app.documents import delete_document, doc_path, get_document, list_documents, store_document
+from app.documents import (
+    delete_document,
+    doc_path,
+    get_document,
+    list_all_documents,
+    list_documents,
+    set_document_project,
+    store_document,
+)
 from app.query.tools import _complete_item, _delete_item, _update_item
 from app.search import hybrid_search
 
@@ -130,6 +138,26 @@ async def remove_document(doc_id: int):
     await delete_document(_pool, settings.docs_dir, doc_id)
     pid = meta["project_id"] if meta else None
     return RedirectResponse(f"/?project={pid}" if pid else "/?project=none", status_code=303)
+
+
+async def _all_projects() -> list[dict]:
+    async with _pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute("SELECT id, name FROM projects WHERE status <> 'archived' ORDER BY name")
+        return [{"id": r[0], "name": r[1]} for r in await cur.fetchall()]
+
+
+@app.get("/documents")
+async def documents_view(request: Request):
+    return templates.TemplateResponse(
+        request=request, name="documents.html",
+        context={"documents": await list_all_documents(_pool), "projects": await _all_projects()},
+    )
+
+
+@app.post("/documents/{doc_id}/project")
+async def move_document(doc_id: int, project: str = Form("none")):
+    await set_document_project(_pool, doc_id, int(project) if project.isdigit() else None)
+    return RedirectResponse("/documents", status_code=303)
 
 
 @app.get("/projects")
