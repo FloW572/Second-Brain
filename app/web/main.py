@@ -24,7 +24,13 @@ from app.documents import (
     set_document_project,
     store_document,
 )
-from app.query.tools import _complete_item, _delete_item, _update_item
+from app.query.tools import (
+    _complete_item,
+    _delete_item,
+    _delete_project,
+    _rename_project,
+    _update_item,
+)
 from app.search import hybrid_search
 
 logger = logging.getLogger(__name__)
@@ -180,14 +186,16 @@ async def projects_view(request: Request):
             """
             SELECT p.id, p.name, p.description,
                    count(i.id) AS total,
-                   count(i.id) FILTER (WHERE i.type = 'todo' AND i.status <> 'done') AS open_todos
+                   count(i.id) FILTER (WHERE i.type = 'todo' AND i.status <> 'done') AS open_todos,
+                   (SELECT count(*) FROM documents d WHERE d.project_id = p.id) AS docs
             FROM projects p LEFT JOIN items i ON i.project_id = p.id
             WHERE p.status <> 'archived'
             GROUP BY p.id ORDER BY p.name
             """
         )
         projects = [
-            {"id": r[0], "name": r[1], "description": r[2], "total": r[3], "open_todos": r[4]}
+            {"id": r[0], "name": r[1], "description": r[2], "total": r[3],
+             "open_todos": r[4], "docs": r[5]}
             for r in await cur.fetchall()
         ]
         await cur.execute("SELECT count(*) FROM items WHERE project_id IS NULL")
@@ -196,6 +204,23 @@ async def projects_view(request: Request):
         request=request, name="projects.html",
         context={"projects": projects, "no_project": no_project},
     )
+
+
+@app.post("/projects/{pid}/rename")
+async def rename_project(pid: int, new_name: str = Form("")):
+    # Reuses the bot's handler (rename by exact id); it no-ops on a blank name
+    # or a clash with another project.
+    if new_name.strip():
+        await _rename_project(_pool, settings, {"id": pid, "new_name": new_name.strip()})
+    return RedirectResponse("/projects", status_code=303)
+
+
+@app.post("/projects/{pid}/delete")
+async def delete_project(pid: int):
+    # Reuses the bot's handler: it refuses unless the project is truly empty
+    # (no items, no files), so a non-empty project simply stays put.
+    await _delete_project(_pool, settings, {"id": pid})
+    return RedirectResponse("/projects", status_code=303)
 
 
 @app.get("/edit/{item_id}")

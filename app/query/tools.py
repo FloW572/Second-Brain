@@ -172,6 +172,34 @@ TOOLS = [
         },
     },
     {
+        "name": "rename_project",
+        "description": "Rename an existing project in place. ALL its items and files stay "
+                       "attached — use this (NOT moving items one by one) when the user wants to "
+                       "rename/relabel a project, e.g. 'nenne Projekt Bier Gut in Bier um'. Match "
+                       "the project by its current name; `new_name` is the new label.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "description": "Current project name (partial ok)."},
+                "new_name": {"type": "string", "description": "New project name."},
+            },
+            "required": ["project", "new_name"],
+        },
+    },
+    {
+        "name": "delete_project",
+        "description": "Delete an EMPTY project by name. Refuses if the project still has items or "
+                       "files — move or delete those first. Cannot be undone; if more than one "
+                       "project could be meant, confirm with the user before deleting.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "description": "Project name to delete (partial ok)."},
+            },
+            "required": ["project"],
+        },
+    },
+    {
         "name": "enrich_item",
         "description": "Recherchiere per Websuche die wichtigsten 3 Fakten zu einem bestehenden "
                        "Eintrag und hänge sie an dessen Inhalt an. Die Fakten werden PASSEND zum "
@@ -438,6 +466,84 @@ async def _create_project(pool, settings, args):
     return {"created": True, "id": row[0], "name": row[1]}
 
 
+async def _rename_project(pool, settings, args):
+    given_id = args.get("id")
+    old = (args.get("project") or "").strip()
+    new_name = (args.get("new_name") or "").strip()
+    if not new_name or (not old and not given_id):
+        return {"renamed": False, "reason": "need both project and new_name"}
+    async with pool.connection() as conn:
+        if given_id:
+            # The dashboard passes an exact id — look it up directly (no fuzzy match).
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "SELECT id, name FROM projects WHERE id = %s AND status <> 'archived'",
+                    (given_id,),
+                )
+                row = await cur.fetchone()
+            project_id, current = (row[0], row[1]) if row else (None, None)
+        else:
+            # Locate the project by its current name; don't create one if it's missing.
+            project_id, current = await resolve_project(conn, old, create_if_missing=False)
+        if project_id is None:
+            return {"renamed": False, "reason": f"no project matching {old or given_id!r}"}
+        async with conn.cursor() as cur:
+            # Refuse to collide with a *different* project that already has the new name.
+            await cur.execute(
+                "SELECT id FROM projects "
+                "WHERE name ILIKE %s AND status <> 'archived' AND id <> %s LIMIT 1",
+                (new_name, project_id),
+            )
+            clash = await cur.fetchone()
+            if clash:
+                return {"renamed": False, "id": project_id,
+                        "reason": f"another project named {new_name!r} already exists (id {clash[0]})"}
+            await cur.execute(
+                "UPDATE projects SET name = %s WHERE id = %s RETURNING id, name",
+                (new_name, project_id),
+            )
+            row = await cur.fetchone()
+        await conn.commit()
+    return {"renamed": True, "id": row[0], "old_name": current, "name": row[1]}
+
+
+async def _delete_project(pool, settings, args):
+    hint = (args.get("project") or "").strip()
+    given_id = args.get("id")
+    if not hint and not given_id:
+        return {"deleted": False, "reason": "no project given"}
+    async with pool.connection() as conn:
+        if given_id:
+            # The dashboard passes an exact id — look it up directly (no fuzzy match).
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "SELECT id, name FROM projects WHERE id = %s AND status <> 'archived'",
+                    (given_id,),
+                )
+                row = await cur.fetchone()
+            project_id, name = (row[0], row[1]) if row else (None, None)
+        else:
+            project_id, name = await resolve_project(conn, hint, create_if_missing=False)
+        if project_id is None:
+            return {"deleted": False, "reason": f"no project matching {hint or given_id!r}"}
+        async with conn.cursor() as cur:
+            # Only delete truly-empty projects: items would be orphaned (project_id -> NULL)
+            # and document rows would cascade-delete (leaving files on disk). Guard on both.
+            await cur.execute("SELECT count(*) FROM items WHERE project_id = %s", (project_id,))
+            item_count = (await cur.fetchone())[0]
+            await cur.execute("SELECT count(*) FROM documents WHERE project_id = %s", (project_id,))
+            doc_count = (await cur.fetchone())[0]
+            if item_count or doc_count:
+                return {"deleted": False, "id": project_id, "name": name,
+                        "items": item_count, "documents": doc_count,
+                        "reason": f"project still has {item_count} item(s) and {doc_count} file(s); "
+                                  "move or delete them first"}
+            await cur.execute("DELETE FROM projects WHERE id = %s RETURNING name", (project_id,))
+            row = await cur.fetchone()
+        await conn.commit()
+    return {"deleted": True, "id": project_id, "name": row[0]}
+
+
 async def _research_facts(anthropic, settings, item: dict, focus: str | None) -> list[str]:
     """Ask Claude to web-search the item's entity and return 3 'Label: Wert' fact lines."""
     lines = [f"Typ: {item['type']}", f"Titel: {item['title']}"]
@@ -527,6 +633,8 @@ _DISPATCH = {
     "update_item": _update_item,
     "delete_item": _delete_item,
     "create_project": _create_project,
+    "rename_project": _rename_project,
+    "delete_project": _delete_project,
 }
 
 
