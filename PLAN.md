@@ -152,7 +152,9 @@ Neu-Einbetten aller Items.
 - [x] **Web-Dashboard** — FastAPI-Oberfläche (`app/web/`, eigener Compose-Service auf Port 8001):
       Items browsen/filtern, semantische Suche, bearbeiten/erledigen/löschen; nutzt dieselben
       Tool-Handler wie der Bot
-- [ ] **Kalender-Integration** — Fälligkeiten als Termine
+- [ ] **Kalender-Integration** (nice-to-have, zurückgestellt) — `.ics`-Export/Abo der Fälligkeiten
+      für die Handy-Kalender-App. Bewusst zurückgestellt: die Erinnerungen decken den Kernbedarf
+      (rechtzeitig informiert werden) bereits ab; der Kalender wäre nur die Anzeige.
 
 > Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
 > den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
