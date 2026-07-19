@@ -3,6 +3,8 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from app.ingest.embed import embed_text, to_vector_literal
+from app.ingest.projects import resolve_project
 from app.models import ITEM_TYPES
 from app.search import hybrid_search
 
@@ -55,6 +57,30 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {"id": {"type": "integer"}},
+            "required": ["id"],
+        },
+    },
+    {
+        "name": "update_item",
+        "description": "Update fields of an existing item by id. Only the fields you pass are "
+                       "changed; omit the rest. Use this to rename, reschedule, reprioritise, "
+                       "move to a project, or change status/tags of a todo/idea/note.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer", "description": "The item id to update."},
+                "title": {"type": "string", "description": "New title."},
+                "content": {"type": ["string", "null"], "description": "New content, or null to clear."},
+                "due_date": {"type": ["string", "null"],
+                             "description": "New due date as ISO YYYY-MM-DD, or null to clear."},
+                "priority": {"type": ["integer", "null"],
+                             "description": "1 = high, 2 = medium, 3 = low, or null to clear."},
+                "status": {"type": "string", "enum": ["open", "doing", "done"],
+                           "description": "Todo status."},
+                "project": {"type": "string",
+                            "description": "Project name; created if it does not exist yet."},
+                "tags": {"type": "array", "items": {"type": "string"}},
+            },
             "required": ["id"],
         },
     },
@@ -144,12 +170,84 @@ async def _complete_item(pool, settings, args):
     return {"completed": False, "id": args["id"], "reason": "not found or not a todo"}
 
 
+async def _update_item(pool, settings, args):
+    item_id = args.get("id")
+    if not item_id:
+        return {"updated": False, "reason": "no id given"}
+
+    sets: list[str] = []
+    params: list = []
+
+    if args.get("title"):
+        sets.append("title = %s")
+        params.append(str(args["title"]).strip()[:200])
+    if "content" in args:
+        sets.append("content = %s")
+        params.append(args["content"])
+    if "due_date" in args:
+        sets.append("due_date = %s")
+        params.append(args["due_date"] or None)
+    if "priority" in args:
+        prio = args["priority"]
+        if prio is not None and prio not in (1, 2, 3):
+            return {"updated": False, "reason": "priority must be 1, 2, 3 or null"}
+        sets.append("priority = %s")
+        params.append(prio)
+    if args.get("status"):
+        if args["status"] not in ("open", "doing", "done"):
+            return {"updated": False, "reason": "status must be open, doing or done"}
+        sets.append("status = %s")
+        params.append(args["status"])
+    if args.get("tags") is not None:
+        sets.append("tags = %s")
+        params.append([t.strip() for t in args["tags"] if isinstance(t, str) and t.strip()])
+
+    async with pool.connection() as conn:
+        # A project name is resolved to an id (creating the project if needed).
+        if args.get("project"):
+            project_id, _ = await resolve_project(conn, args["project"])
+            sets.append("project_id = %s")
+            params.append(project_id)
+
+        # If the searchable text changed, re-embed so semantic search stays accurate.
+        if args.get("title") or "content" in args:
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT title, content FROM items WHERE id = %s", (item_id,))
+                current = await cur.fetchone()
+            if current is None:
+                return {"updated": False, "id": item_id, "reason": "not found"}
+            new_title = str(args["title"]).strip()[:200] if args.get("title") else current[0]
+            new_content = args["content"] if "content" in args else current[1]
+            emb = to_vector_literal(
+                await embed_text(f"{new_title}\n{new_content or ''}", settings.embedding_model)
+            )
+            sets.append("embedding = %s::vector")
+            params.append(emb)
+
+        if not sets:
+            return {"updated": False, "id": item_id, "reason": "no fields to update"}
+
+        params.append(item_id)
+        async with conn.cursor() as cur:
+            await cur.execute(
+                f"UPDATE items SET {', '.join(sets)} WHERE id = %s RETURNING title, type",
+                params,
+            )
+            row = await cur.fetchone()
+        await conn.commit()
+
+    if row:
+        return {"updated": True, "id": item_id, "title": row[0], "type": row[1]}
+    return {"updated": False, "id": item_id, "reason": "not found"}
+
+
 _DISPATCH = {
     "now": _now,
     "list_projects": _list_projects,
     "list_todos": _list_todos,
     "search": _search,
     "complete_item": _complete_item,
+    "update_item": _update_item,
 }
 
 
