@@ -159,6 +159,14 @@ Neu-Einbetten aller Items.
       für die Handy-Kalender-App. Bewusst zurückgestellt: die Erinnerungen decken den Kernbedarf
       (rechtzeitig informiert werden) bereits ab; der Kalender wäre nur die Anzeige.
 
+### 🔮 Phase 4 — Anreicherung & Recherche
+
+- [x] **Fakten-Anreicherung** — „Ergänze Referenz X um relevante Fakten": das `enrich_item`-Tool
+      recherchiert per **Anthropic-Websuche** (`web_search`, Server-Tool) die wichtigsten
+      typgerechten Fakten (z.B. Hotel → Adresse/Telefon/Bewertung, Buch → Autor/Jahr) und hängt
+      sie an den Inhalt an (re-embedded). Die Websuche ist auf diesen Pfad beschränkt, damit
+      normale Abfragen kostenfrei bleiben; findet sie nichts Verlässliches, wird nichts erfunden.
+
 > Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
 > den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
 

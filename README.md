@@ -36,6 +36,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)
 | **Suche** | hybrid: semantisch (pgvector) **+** deutscher Volltext, fusioniert mit RRF |
 | **Fragen** | agentischer Claude-Loop, begründete Antworten aus den echten Daten |
 | **Bearbeiten** | `update_item` (Titel/Inhalt/Typ/Fälligkeit/Priorität/Status/Projekt/Tags), `complete_item`, `delete_item` |
+| **Anreichern** | „Ergänze Referenz X um relevante Fakten" → Claude recherchiert per **Websuche** die wichtigsten typgerechten Fakten (Hotel: Adresse/Telefon/Bewertung usw.) und hängt sie an den Inhalt an |
 | **Erinnerungen** | proaktive Benachrichtigung zu fälligen Todos (uhrzeitgenau, Zeitzone `TIMEZONE`) |
 
 ### Agent-Tools
@@ -49,6 +50,8 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)
 | `complete_item` | Todo als erledigt markieren |
 | `update_item` | Felder eines Eintrags ändern (partiell; re-embedded bei Textänderung) |
 | `delete_item` | Eintrag endgültig löschen |
+| `create_project` | neues (leeres) Projekt anlegen (keine Duplikate) |
+| `enrich_item` | per **Websuche** die wichtigsten Fakten zu einem Eintrag recherchieren und anhängen |
 
 ## Setup
 

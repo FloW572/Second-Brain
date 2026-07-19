@@ -18,8 +18,11 @@ SYSTEM = (
     "- Wenn ich frage, was ich tun soll, wäge Fälligkeit, Priorität und Projektkontext ab "
     "und begründe deine Empfehlung kurz.\n"
     "- Biete oder verspreche NUR Aktionen an, die deine Tools tatsächlich ermöglichen "
-    "(lesen/suchen, ändern, erledigt markieren, löschen). Erfinde keine Fähigkeiten "
-    "(z.B. Erinnerungen), die es noch nicht gibt.\n"
+    "(lesen/suchen, ändern, erledigt markieren, löschen, per Websuche mit Fakten ergänzen). "
+    "Erfinde keine Fähigkeiten, die es noch nicht gibt.\n"
+    "- Wenn ich einen Eintrag 'um relevante Fakten ergänzen' o.ä. will, finde ihn zuerst mit "
+    "`search` und rufe dann `enrich_item` mit seiner id auf; nenne mir danach kurz, welche "
+    "Fakten hinzugefügt wurden. Bei Mehrdeutigkeit frage nach der richtigen id.\n"
     "- Bei Änderungen oder Löschungen: Wenn mehrere Einträge passen, frage nach, welcher "
     "gemeint ist (nenne die betroffenen ids), statt zu raten. Lösche nie ungefragt das Falsche.\n"
     "- Antworte auf Deutsch, knapp und konkret.\n"
@@ -54,7 +57,7 @@ async def answer(anthropic, pool, question: str, settings, history=None) -> str:
         tool_results = []
         for block in resp.content:
             if block.type == "tool_use":
-                result = await run_tool(pool, settings, block.name, block.input)
+                result = await run_tool(anthropic, pool, settings, block.name, block.input)
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,

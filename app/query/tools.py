@@ -11,6 +11,30 @@ from app.search import hybrid_search
 
 logger = logging.getLogger(__name__)
 
+# Server-side web search, used only by enrich_item so normal queries stay search-free.
+# max_uses caps cost per enrichment; the model runs the searches on Anthropic's side.
+WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search", "max_uses": 3}
+
+# Sentinel the research model returns when it cannot find reliable facts — better an
+# honest "nothing found" than invented address/phone numbers.
+_NO_FACTS = "KEINE_FAKTEN"
+
+RESEARCH_SYSTEM = (
+    "Du recherchierst per Websuche die wichtigsten Fakten zu EINEM konkreten Eintrag aus "
+    "meinem Second Brain (z.B. ein Hotel, Restaurant, Unternehmen, Buch, Ort oder Produkt).\n"
+    "Vorgehen:\n"
+    "- Erkenne aus Titel/Inhalt/Typ, worum es sich handelt, und wähle die 3 WICHTIGSTEN, "
+    "typgerechten Fakten. Beispiele: Hotel/Restaurant -> Adresse, Telefon, Website, Bewertung, "
+    "Preisniveau; Unternehmen -> Branche, Standort, Website; Buch -> Autor, Jahr, Thema.\n"
+    "- Nutze die Websuche und stütze jeden Fakt auf die Suchergebnisse. Erfinde nichts.\n"
+    "- Gib die Fakten als reinen Text zurück: pro Zeile ein Fakt im Format 'Label: Wert', "
+    "keine Aufzählungszeichen, keine Einleitung, kein Schlusssatz, kein Markdown.\n"
+    f"- Findest du keine verlässlichen Informationen, antworte NUR mit '{_NO_FACTS}'."
+)
+
+_MAX_RESEARCH_TURNS = 3   # server web-search loop may pause_turn; bound the continuations
+_MAX_FACTS = 3
+
 TOOLS = [
     {
         "name": "now",
@@ -116,6 +140,27 @@ TOOLS = [
                 "description": {"type": ["string", "null"], "description": "Optional description."},
             },
             "required": ["name"],
+        },
+    },
+    {
+        "name": "enrich_item",
+        "description": "Recherchiere per Websuche die wichtigsten 3 Fakten zu einem bestehenden "
+                       "Eintrag und hänge sie an dessen Inhalt an. Die Fakten werden PASSEND zum "
+                       "Eintrag gewählt: bei einem Hotel/Restaurant z.B. Adresse, Telefon, Website, "
+                       "Bewertung; bei einem Buch Autor/Jahr; bei einer Firma Branche/Standort/Website "
+                       "usw. Nutze dies, wenn ich sage 'ergänze/erweitere <Eintrag> um relevante "
+                       "Fakten' o.ä. Finde zuerst mit `search` die richtige id; bei Mehrdeutigkeit "
+                       "frage nach. Die Fakten kommen aus einer echten Websuche, nicht aus dem "
+                       "Gedächtnis.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer", "description": "Die id des zu ergänzenden Eintrags."},
+                "focus": {"type": "string",
+                          "description": "Optional: worauf die Fakten sich konzentrieren sollen, "
+                                         "falls ich das ausdrücklich vorgebe (z.B. 'nur Öffnungszeiten')."},
+            },
+            "required": ["id"],
         },
     },
 ]
@@ -336,6 +381,81 @@ async def _create_project(pool, settings, args):
     return {"created": True, "id": row[0], "name": row[1]}
 
 
+async def _research_facts(anthropic, settings, item: dict, focus: str | None) -> list[str]:
+    """Ask Claude to web-search the item's entity and return 3 'Label: Wert' fact lines."""
+    lines = [f"Typ: {item['type']}", f"Titel: {item['title']}"]
+    if item.get("content"):
+        lines.append(f"Bisheriger Inhalt: {item['content']}")
+    if item.get("project"):
+        lines.append(f"Projekt: {item['project']}")
+    if focus:
+        lines.append(f"Schwerpunkt (vom Nutzer gewünscht): {focus}")
+    lines.append("\nRecherchiere die wichtigsten typgerechten Fakten und gib sie wie beschrieben zurück.")
+
+    messages = [{"role": "user", "content": "\n".join(lines)}]
+    text = ""
+    for _ in range(_MAX_RESEARCH_TURNS):
+        resp = await anthropic.messages.create(
+            model=settings.query_model,
+            max_tokens=1024,
+            system=RESEARCH_SYSTEM,
+            tools=[WEB_SEARCH_TOOL],
+            messages=messages,
+        )
+        # A long server-side search loop stops with pause_turn; re-send to continue.
+        if resp.stop_reason == "pause_turn":
+            messages.append({"role": "assistant", "content": resp.content})
+            continue
+        text = "".join(b.text for b in resp.content if b.type == "text").strip()
+        break
+
+    if not text or _NO_FACTS in text:
+        return []
+    facts = []
+    for raw in text.splitlines():
+        line = raw.strip().lstrip("-•*").strip()   # tolerate stray bullet markers
+        if line and _NO_FACTS not in line:
+            facts.append(line)
+    return facts[:_MAX_FACTS]
+
+
+async def enrich_item(anthropic, pool, settings, args) -> dict:
+    """Research the item's entity on the web and append the key facts to its content."""
+    item_id = args.get("id")
+    if not item_id:
+        return {"enriched": False, "reason": "no id given"}
+
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT i.type, i.title, i.content, p.name
+            FROM items i LEFT JOIN projects p ON p.id = i.project_id
+            WHERE i.id = %s
+            """,
+            (item_id,),
+        )
+        row = await cur.fetchone()
+    if row is None:
+        return {"enriched": False, "id": item_id, "reason": "not found"}
+
+    item = {"type": row[0], "title": row[1], "content": row[2], "project": row[3]}
+    facts = await _research_facts(anthropic, settings, item, args.get("focus"))
+    if not facts:
+        return {"enriched": False, "id": item_id, "title": item["title"],
+                "reason": "no reliable facts found via web search"}
+
+    today = datetime.now(ZoneInfo(settings.timezone)).date().isoformat()
+    block = f"Fakten (Stand {today}):\n" + "\n".join(f"- {f}" for f in facts)
+    existing = (item["content"] or "").strip()
+    new_content = f"{existing}\n\n{block}" if existing else block
+
+    # Reuse update_item so the content change is persisted and re-embedded consistently.
+    result = await _update_item(pool, settings, {"id": item_id, "content": new_content})
+    if not result.get("updated"):
+        return {"enriched": False, "id": item_id, "reason": result.get("reason", "update failed")}
+    return {"enriched": True, "id": item_id, "title": item["title"], "facts": facts}
+
+
 _DISPATCH = {
     "now": _now,
     "list_projects": _list_projects,
@@ -348,12 +468,17 @@ _DISPATCH = {
 }
 
 
-async def run_tool(pool, settings, name: str, tool_input: dict) -> dict:
-    handler = _DISPATCH.get(name)
-    if handler is None:
-        return {"error": f"unknown tool {name}"}
+async def run_tool(anthropic, pool, settings, name: str, tool_input: dict) -> dict:
+    args = tool_input or {}
     try:
-        return await handler(pool, settings, tool_input or {})
+        # enrich_item needs the Anthropic client for its web-search research call;
+        # the rest only touch the DB.
+        if name == "enrich_item":
+            return await enrich_item(anthropic, pool, settings, args)
+        handler = _DISPATCH.get(name)
+        if handler is None:
+            return {"error": f"unknown tool {name}"}
+        return await handler(pool, settings, args)
     except Exception as exc:  # noqa: BLE001 - surface as tool error to the model
         logger.exception("tool %s failed", name)
         return {"error": f"{type(exc).__name__}: {exc}"}
