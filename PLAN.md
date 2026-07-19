@@ -338,6 +338,16 @@ danach gelöscht); für saubere Zahlen gegen eine kleine/leere DB laufen lassen.
       Browsing-Ansichten (Alle, Typ „todo", Projekt) standardmäßig ausgeblendet; ein Umschalter
       („Erledigte anzeigen/ausblenden", `?show_done=1`) blendet sie bei Bedarf ein. Die Suche zeigt
       weiterhin alles.
+- [x] **Duplikat-Erkennung beim Erfassen** — die reine Text-Klassifikation des Routers (`capture`
+      vs. `query`) erkennt implizite Aktualisierungen wie „X morgen ist um 19 Uhr 30" nicht
+      zuverlässig als Änderung an einem bestehenden Todo, weil ihr der Blick in die Daten fehlt.
+      `app/ingest/` sucht deshalb vor dem Anlegen selbst per `hybrid_search` nach passenden offenen
+      Todos; hält Claude die Nachricht eindeutig für eine Aktualisierung eines davon, wird das
+      bestehende Todo per `update_item` aktualisiert statt ein Duplikat angelegt.
+- [x] **Dashboard-Fälligkeiten in korrekter Zeitzone** — `due_at` (`TIMESTAMPTZ`) kommt UTC-basiert
+      aus Postgres zurück; das Dashboard formatierte es bislang ungewandelt, sodass Uhrzeiten dort
+      um den UTC-Offset verschoben erschienen (z.B. 19:30 lokal als 17:30). Wird jetzt vor der
+      Anzeige nach `TIMEZONE` konvertiert (analog zum bereits korrekten `app/reminders.py`).
 
 ### 🔮 Phase 7 — Geplante Funktionen (nach v1.2)
 

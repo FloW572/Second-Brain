@@ -33,16 +33,61 @@ def _confirmation(data: dict, project_name: str | None, due) -> str:
     return "\n".join(lines)
 
 
+async def _open_todo_candidates(pool, settings, query_text: str) -> list[dict]:
+    """Open todos a capture message might actually be about, so the extractor can
+    update one of them instead of creating a duplicate (e.g. 'X morgen 19 Uhr' when
+    an open todo about X already exists)."""
+    # Local import: app.search imports app.ingest.embed, which would otherwise cycle
+    # back through this package's __init__ while it's still being loaded.
+    from app.search import hybrid_search
+    try:
+        hits = await hybrid_search(pool, settings, query_text, types=["todo"], limit=5)
+    except Exception:
+        logger.exception("candidate search for duplicate detection failed")
+        return []
+    return [
+        {"id": h["id"], "title": h["title"], "due_at": h["due_at"]}
+        for h in hits if h["status"] != "done"
+    ][:4]
+
+
+async def _update_existing(pool, item_id: int, data: CaptureData, settings) -> str:
+    """Apply a capture message as an update to an already-existing todo instead of
+    inserting a duplicate."""
+    from app.query.tools import _update_item  # local import: see _open_todo_candidates
+    args: dict = {"id": item_id}
+    if data.get("due_at"):
+        args["due_at"] = data["due_at"]
+    if data.get("priority"):
+        args["priority"] = data["priority"]
+    result = await _update_item(pool, settings, args)
+    if not result.get("updated"):
+        logger.warning("could not update existing item %s: %s", item_id, result.get("reason"))
+        return f"⚠️ Konnte bestehendes Todo #{item_id} nicht aktualisieren."
+    due = parse_due(data["due_at"], settings.timezone) if data.get("due_at") else None
+    lines = [f"🔄 Aktualisiert: {result['title']}"]
+    if due:
+        lines.append(f"📅 Fällig: {due.strftime('%Y-%m-%d %H:%M')}")
+    return "\n".join(lines)
+
+
 async def capture(pool, anthropic, text: str, source: str, settings) -> str:
     """Extract, embed and store one captured message. Returns a confirmation string."""
     # A #Projektname typed in the message assigns the project deterministically (same
     # convention as file captions); it's stripped before extraction and overrides
     # whatever project Claude might otherwise guess.
     project_tag, body = extract_project_hashtag(text)
-    raw = await extract_structure(anthropic, body or text, settings)
-    data: CaptureData = normalize_capture(raw, body or text)
+    query_text = body or text
+
+    candidates = await _open_todo_candidates(pool, settings, query_text)
+    raw = await extract_structure(anthropic, query_text, settings, candidates=candidates)
+    existing_id = raw.get("existing_item_id")
+    data: CaptureData = normalize_capture(raw, query_text)
     if project_tag:
         data["project_hint"] = project_tag
+
+    if existing_id and existing_id in {c["id"] for c in candidates}:
+        return await _update_existing(pool, existing_id, data, settings)
 
     emb_lit = to_vector_literal(
         await embed_text(f"{data['title']}\n{data['content'] or ''}", settings.embedding_model)
