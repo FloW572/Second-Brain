@@ -9,6 +9,9 @@ werden per **Telegram** — als **Text oder Sprachnachricht** — vom Handy erfa
 
 ## Demo
 
+Ein kurzer Blick in den Alltag: eine Notiz per Telegram erfassen (Text oder Sprache), begründet
+nachfragen — und mit `/stats` jederzeit die geschätzten Kosten im Blick behalten.
+
 <p align="center">
   <img src="docs/demo.gif" width="360" alt="Telegram-Bot: Notiz erfassen und begründet fragen">
 </p>
