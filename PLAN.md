@@ -243,6 +243,18 @@ gutes Portfolio-Signal:
       hinaus erreichbar sein soll (aktuell bewusst ohne Auth, nur für lokal/vertrauenswürdiges Netz).
 - [ ] **Kosten-/Budget-Grenzen** — optionales Limit/Warnschwelle für Anthropic-Ausgaben.
 
+### 🔮 Phase 6 — Geplante Funktionen (nach v1.0)
+
+- [ ] **Proaktive Vorschläge** — der Bot erkennt Muster in den Daten und schlägt von sich aus
+      etwas vor, z.B. „Du hast 3 Ideen zum Thema RAG — soll ich sie zusammenfassen/bündeln?"
+      (auf Basis von Häufung/Ähnlichkeit verwandter Einträge).
+- [ ] **Lern-Review** — Erweiterung des Wochenrückblicks um „Was habe ich diese Woche gelernt?"
+      (aus Notizen und erledigten Todos), als eigener Abschnitt.
+- [ ] **Erledigte Todos im Dashboard ausblenden** — Umschalter im Web, der `done`-Todos
+      standardmäßig ausblendet und nur offene zeigt (bei Bedarf wieder einblendbar).
+- [ ] **Wiederkehrende Todos (recurring)** — Todos mit Wiederholung (täglich/wöchentlich/
+      monatlich); beim Erledigen wird automatisch die nächste Fälligkeit angelegt.
+
 > Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
 > den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
 

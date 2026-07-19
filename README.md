@@ -208,5 +208,9 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
   Web-Dashboard, Dokumente je Projekt; zurückgestellt: Kalender-Integration.
 - **Phase 4 (fertig):** Fakten-Anreicherung per Websuche (`enrich_item`), durchgehende
   „tippt…"-Anzeige bei langen Antworten.
+- **Release:** aktueller Stand als **v1.0.0** getaggt.
+- **Geplant (nach v1.0):** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
+  Lern-Review („Was habe ich gelernt?"), erledigte Todos im Dashboard ausblenden, wiederkehrende
+  Todos; optional: Beobachtbarkeit/Kosten-Logging und Dashboard-Login.
 
 Siehe den vollständigen Plan in [PLAN.md](PLAN.md).
