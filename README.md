@@ -273,12 +273,15 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
   Web-Dashboard, Dokumente je Projekt; zurückgestellt: Kalender-Integration.
 - **Phase 4 (fertig):** Fakten-Anreicherung per Websuche (`enrich_item`), durchgehende
   „tippt…"-Anzeige bei langen Antworten.
-- **Seit v1.0:** Lern-Rückblick (`/recently_learned`), Datei-Kommentare, Projekt-Umbenennen/-Löschen
+- **v1.1.0:** Lern-Rückblick (`/recently_learned`), Datei-Kommentare, Projekt-Umbenennen/-Löschen
   (Bot + Dashboard), Kosten-/Nutzungs-Observability (`/stats`, in der DB persistiert) und ein
   **Eval-Harness** (Router/Extraktion/Retrieval/Antwort).
-- **Release:** aktueller Stand als **v1.1.0** getaggt (Minor über v1.0.0).
-- **Geplant (nach v1.1):** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
-  erledigte Todos im Dashboard ausblenden, wiederkehrende Todos; optional: Dashboard-Login und ein
-  Metrik-Backend/Tracing.
+- **v1.2.0:** `#Projektname` beim Text-Erfassen und **Dashboard-Redesign** (Sidebar-Navigation,
+  automatischer Hell-/Dunkelmodus, Karten-Raster, Glassmorphism).
+- **Seit v1.2 (aktueller Stand):** Einträge & Projekte im Dashboard **anlegen**; erledigte Todos
+  standardmäßig **ausblenden** (Umschalter).
+- **Geplant:** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
+  wiederkehrende Todos, Relevanz-Aging fürs RAG-Ranking, Health-/Doctor-Check; optional:
+  Dashboard-Login und ein Metrik-Backend/Tracing.
 
 Siehe den vollständigen Plan in [PLAN.md](PLAN.md).
