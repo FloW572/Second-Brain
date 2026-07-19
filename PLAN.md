@@ -123,7 +123,7 @@ Neu-Einbetten aller Items.
 - [x] Docker-Compose-Setup (App + Postgres/pgvector)
 - [x] Unit-Tests für reine Logik (Normalisierung, RRF-Fusion, Vektor-Literal)
 
-### 🔜 Phase 2 — Komfort & Editieren
+### ✅ Phase 2 — Komfort & Editieren (umgesetzt)
 
 - [x] **Sprachnachrichten** — lokale Transkription via `faster-whisper`
       (`app/transcribe.py`); Transkript läuft durch dieselbe Pipeline wie Text
@@ -136,7 +136,9 @@ Neu-Einbetten aller Items.
 - [x] **`delete_item`-Tool** — Eintrag per id endgültig löschen (fragt bei Mehrdeutigkeit nach)
 - [x] **Router erkennt Änderungen/Aktionen** an Bestehendem als `query` (kein Duplikat-Bug mehr)
 - [x] **Agent bleibt ehrlich** — bietet nur Aktionen an, die die Tools wirklich können
-- [ ] Weitere Tools: `create_project`, `reschedule`
+- [x] **`create_project`-Tool** — Projekt explizit anlegen (optional mit Beschreibung; legt
+      keine Duplikate an)
+- [x] **`reschedule`** — bereits durch `update_item` (`due_at`) abgedeckt; setzt `reminded_at` zurück
 
 ### 🔮 Phase 3 — Proaktiv & Oberfläche
 
