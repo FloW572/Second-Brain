@@ -327,13 +327,23 @@ danach gelöscht); für saubere Zahlen gegen eine kleine/leere DB laufen lassen.
 > `#Projektname`-Erfassung im Text und das Dashboard-Redesign. Ab Phase 7 folgt Geplantes,
 > das noch nicht released ist.
 
+### ✅ Seit v1.2 — umgesetzt
+
+- [x] **Erstellen im Dashboard** — neue Einträge (Todo/Idee/Notiz/Referenz) über ein strukturiertes
+      Formular (Typ/Titel/Inhalt/Fälligkeit/Priorität/Projekt/Tags → direkt gespeichert, inkl. lokalem
+      Embedding, ohne Claude-Aufruf) sowie neue Projekte per Formular auf der Projekte-Seite
+      (`create_project`). Schließt die letzte Lücke: das Dashboard kann jetzt auch **anlegen**, nicht
+      nur lesen/ändern/löschen.
+- [x] **Erledigte Todos ausblenden** — im Dashboard sind erledigte (`done`) Todos in den
+      Browsing-Ansichten (Alle, Typ „todo", Projekt) standardmäßig ausgeblendet; ein Umschalter
+      („Erledigte anzeigen/ausblenden", `?show_done=1`) blendet sie bei Bedarf ein. Die Suche zeigt
+      weiterhin alles.
+
 ### 🔮 Phase 7 — Geplante Funktionen (nach v1.2)
 
 - [ ] **Proaktive Vorschläge** — der Bot erkennt Muster in den Daten und schlägt von sich aus
       etwas vor, z.B. „Du hast 3 Ideen zum Thema RAG — soll ich sie zusammenfassen/bündeln?"
       (auf Basis von Häufung/Ähnlichkeit verwandter Einträge).
-- [ ] **Erledigte Todos im Dashboard ausblenden** — Umschalter im Web, der `done`-Todos
-      standardmäßig ausblendet und nur offene zeigt (bei Bedarf wieder einblendbar).
 - [ ] **Wiederkehrende Todos (recurring)** — Todos mit Wiederholung (täglich/wöchentlich/
       monatlich); beim Erledigen wird automatisch die nächste Fälligkeit angelegt.
 - [ ] **Relevanz-Aging (Memory-Decay)** — alte, selten/nie abgefragte Einträge im RAG-Ranking

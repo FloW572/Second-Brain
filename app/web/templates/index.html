@@ -47,6 +47,12 @@
 </section>
 {% endif %}
 
+{% if not q and (not active_type or active_type == 'todo') %}
+<div class="toggle-done">
+  <a href="{{ toggle_url }}">{{ '🙈 Erledigte ausblenden' if show_done else '👁 Erledigte anzeigen' }}</a>
+</div>
+{% endif %}
+
 <div class="cards">
   {% if not items %}
   <p class="empty">Keine Einträge{% if q %} für „{{ q }}“{% endif %}.</p>

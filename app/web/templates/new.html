@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Neuer Eintrag · Second Brain{% endblock %}
+{% block content %}
+<h1 class="page-head">＋ Neuer Eintrag</h1>
+<form class="edit" method="post" action="/new">
+  <label>Typ
+    <select name="type">
+      {% for t, emoji in type_emoji.items() %}
+      <option value="{{ t }}" {{ 'selected' if default_type == t else '' }}>{{ emoji }} {{ t }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Titel
+    <input type="text" name="title" required autofocus>
+  </label>
+
+  <label>Inhalt
+    <textarea name="content" rows="3"></textarea>
+  </label>
+
+  <label>Status (nur für Todos)
+    <select name="status">
+      <option value="">—</option>
+      {% for s in ['open', 'doing', 'done'] %}
+      <option value="{{ s }}">{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Priorität
+    <select name="priority">
+      <option value="">—</option>
+      {% for p, lbl in [(1, 'hoch'), (2, 'mittel'), (3, 'niedrig')] %}
+      <option value="{{ p }}">{{ lbl }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Fällig
+    <input type="datetime-local" name="due_at">
+  </label>
+
+  <label>Projekt
+    <input type="text" name="project" placeholder="Projektname (optional, wird bei Bedarf angelegt)">
+  </label>
+
+  <label>Tags (Komma-getrennt)
+    <input type="text" name="tags">
+  </label>
+
+  <div class="form-actions">
+    <button class="btn ok" type="submit">Erstellen</button>
+    <a class="btn" href="/">Abbrechen</a>
+  </div>
+</form>
+{% endblock %}

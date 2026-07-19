@@ -3,6 +3,12 @@
 {% block content %}
 <h1 class="page-head">📁 Projekte</h1>
 
+<form class="new-project" method="post" action="/projects/create">
+  <input type="text" name="name" placeholder="Neues Projekt…" required>
+  <input type="text" name="description" placeholder="Beschreibung (optional)">
+  <button class="btn ok" type="submit">＋ Anlegen</button>
+</form>
+
 <div class="cards">
 {% if not projects and not no_project %}
   <p class="empty">Noch keine Projekte.</p>

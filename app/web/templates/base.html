@@ -75,6 +75,13 @@
   .nav a.active { background:var(--accent-weak); color:var(--accent); font-weight:600; }
   .nav-label { font-size:.68rem; text-transform:uppercase; letter-spacing:.07em; color:var(--faint);
                font-weight:700; padding:0 12px; margin:10px 0 2px; }
+  .new-btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 12px;
+             border-radius:10px; background:var(--accent); color:var(--accent-on); font-weight:600;
+             font-size:.9rem; text-decoration:none; box-shadow:var(--shadow-sm); transition:filter .12s; }
+  .new-btn:hover { filter:brightness(1.08); }
+  .new-project { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; max-width:640px; }
+  .new-project input { flex:1; min-width:150px; padding:9px 12px; border:1px solid var(--border);
+                       border-radius:var(--radius-sm); background:var(--surface); color:var(--text); font-size:.9rem; }
 
   main { flex:1; min-width:0; padding:26px clamp(18px,3.5vw,40px) 60px; }
   .page-head { margin:0 0 20px; font-size:1.5rem; font-weight:700; letter-spacing:-.02em;
@@ -146,6 +153,11 @@
             color:var(--ok-on); border-color:var(--ok); }
   .btn.danger { background:var(--surface); color:var(--danger); border-color:var(--danger-border); }
   .btn.danger:hover { background:var(--danger-weak); border-color:var(--danger); color:var(--danger); }
+
+  .toggle-done { margin:-4px 0 16px; }
+  .toggle-done a { font-size:.82rem; color:var(--muted); text-decoration:none; border:1px solid var(--border);
+                   padding:6px 12px; border-radius:999px; background:var(--surface); transition:all .12s; }
+  .toggle-done a:hover { color:var(--text); border-color:var(--border-strong); }
 
   .empty { color:var(--faint); text-align:center; padding:64px 0; grid-column:1/-1; }
 
@@ -230,6 +242,7 @@
 <div class="app">
   <aside class="sidebar">
     <a class="brand" href="/">🧠 Second Brain</a>
+    <a class="new-btn" href="/new">＋ Neuer Eintrag</a>
     <nav class="nav">
       <a href="/" class="{{ 'active' if path == '/' and not qtype and not qproj and not qsearch else '' }}">🗂 Alle</a>
       <div class="nav-label">Typen</div>
