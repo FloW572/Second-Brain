@@ -9,11 +9,13 @@ werden per **Telegram** — als **Text oder Sprachnachricht** — vom Handy erfa
 
 ## Demo
 
-<!-- TODO Medien einfügen: ein kurzes GIF vom Telegram-Chat (erfassen → fragen → begründete
-     Antwort) und 1–2 Dashboard-Screenshots. Dateien unter docs/ ablegen und die Zeilen unten
-     aktivieren (die # entfernen). Siehe docs/README.md. -->
-<!-- ![Telegram-Bot: erfassen und fragen](docs/demo.gif) -->
-<!-- ![Web-Dashboard](docs/dashboard.png) -->
+![Telegram-Bot: Notiz erfassen und begründet fragen](docs/demo.gif)
+
+**Web-Dashboard** — dieselbe Datenbank im Browser: browsen, suchen, bearbeiten, Projekte verwalten.
+
+| Alle Einträge | Projekte (umbenennen/löschen) | In einem Projekt |
+|:---:|:---:|:---:|
+| <img src="docs/dashboard_all.png" width="240" alt="Alle Einträge"> | <img src="docs/dashboard_projects.png" width="240" alt="Projekte"> | <img src="docs/project_inside.png" width="240" alt="Projekt-Ansicht mit Dokumenten"> |
 
 **Was dieses Projekt beinhaltet — in 30 Sekunden:**
 - **RAG in echt:** hybride Suche (Vektor **+** deutscher Volltext, RRF-Fusion, Distanz-Schwelle)
