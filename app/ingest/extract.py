@@ -1,6 +1,9 @@
 """Turn a free-text message into structured fields using Claude (forced tool call)."""
 import logging
 from datetime import date
+from typing import cast
+
+from app.models import ITEM_TYPES, CaptureData
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +15,7 @@ STRUCTURE_TOOL = {
         "properties": {
             "type": {
                 "type": "string",
-                "enum": ["todo", "idea", "note", "reference"],
+                "enum": list(ITEM_TYPES),
                 "description": "todo = actionable task; idea = idea/thought; "
                                "note = general note; reference = link/resource to keep.",
             },
@@ -38,7 +41,7 @@ STRUCTURE_TOOL = {
 }
 
 
-async def extract_structure(anthropic, text: str, settings, today: str | None = None) -> dict:
+async def extract_structure(anthropic, text: str, settings, today: str | None = None) -> CaptureData:
     today = today or date.today().isoformat()
     system = (
         f"Heute ist {today}. Du extrahierst aus einer kurzen Notiz strukturierte Felder "
@@ -57,7 +60,7 @@ async def extract_structure(anthropic, text: str, settings, today: str | None = 
         )
         for block in resp.content:
             if block.type == "tool_use" and block.name == "structure_item":
-                return dict(block.input)
+                return cast(CaptureData, dict(block.input))
     except Exception:
         logger.exception("extract_structure failed; falling back to plain note")
     return {"type": "note", "title": text[:80], "content": text}
