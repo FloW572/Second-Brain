@@ -322,7 +322,12 @@ danach gelöscht); für saubere Zahlen gegen eine kleine/leere DB laufen lassen.
       und ein ambienter Aurora-Hintergrund. Rein CSS, dependency-frei; Templates und
       Funktionalität unverändert.
 
-### 🔮 Phase 7 — Geplante Funktionen (nach v1.1)
+> **Versionssprung → v1.2.0.** Der Stand bis hier ist als **v1.2.0** getaggt und gepusht (Minor
+> über v1.1.0, keine Breaking Changes). Dazu gehören die „Seit v1.1"-Funktionen: die
+> `#Projektname`-Erfassung im Text und das Dashboard-Redesign. Ab Phase 7 folgt Geplantes,
+> das noch nicht released ist.
+
+### 🔮 Phase 7 — Geplante Funktionen (nach v1.2)
 
 - [ ] **Proaktive Vorschläge** — der Bot erkennt Muster in den Daten und schlägt von sich aus
       etwas vor, z.B. „Du hast 3 Ideen zum Thema RAG — soll ich sie zusammenfassen/bündeln?"
