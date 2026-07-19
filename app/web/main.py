@@ -65,19 +65,59 @@ async def _fetch(where: str = "", params: dict | None = None) -> list[dict]:
         return [_row_to_item(r) for r in await cur.fetchall()]
 
 
+async def _project_name(pid: int) -> str | None:
+    async with _pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute("SELECT name FROM projects WHERE id = %s", (pid,))
+        row = await cur.fetchone()
+    return row[0] if row else None
+
+
 @app.get("/")
-async def index(request: Request, type: str = "", q: str = ""):
+async def index(request: Request, type: str = "", q: str = "", project: str = ""):
+    project_name = None
     if q:
         hits = await hybrid_search(_pool, settings, q, None, 30)
         ids = [h["id"] for h in hits]
         items = await _fetch("WHERE i.id = ANY(%(ids)s)", {"ids": ids}) if ids else []
+    elif project == "none":
+        items = await _fetch("WHERE i.project_id IS NULL")
+        project_name = "Ohne Projekt"
+    elif project.isdigit():
+        items = await _fetch("WHERE i.project_id = %(pid)s", {"pid": int(project)})
+        project_name = await _project_name(int(project))
     elif type in TYPE_EMOJI:
         items = await _fetch("WHERE i.type = %(type)s", {"type": type})
     else:
         items = await _fetch()
     return templates.TemplateResponse(
         request=request, name="index.html",
-        context={"items": items, "active_type": type, "q": q, "type_emoji": TYPE_EMOJI},
+        context={"items": items, "active_type": type, "q": q,
+                 "project_name": project_name, "type_emoji": TYPE_EMOJI},
+    )
+
+
+@app.get("/projects")
+async def projects_view(request: Request):
+    async with _pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT p.id, p.name, p.description,
+                   count(i.id) AS total,
+                   count(i.id) FILTER (WHERE i.type = 'todo' AND i.status <> 'done') AS open_todos
+            FROM projects p LEFT JOIN items i ON i.project_id = p.id
+            WHERE p.status <> 'archived'
+            GROUP BY p.id ORDER BY p.name
+            """
+        )
+        projects = [
+            {"id": r[0], "name": r[1], "description": r[2], "total": r[3], "open_todos": r[4]}
+            for r in await cur.fetchall()
+        ]
+        await cur.execute("SELECT count(*) FROM items WHERE project_id IS NULL")
+        no_project = (await cur.fetchone())[0]
+    return templates.TemplateResponse(
+        request=request, name="projects.html",
+        context={"projects": projects, "no_project": no_project},
     )
 
 
