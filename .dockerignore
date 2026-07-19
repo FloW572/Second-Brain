@@ -1,0 +1,33 @@
+# Secrets — NEVER bake into the image (config comes via compose env_file at runtime)
+.env
+*.env.local
+
+# Version control
+.git/
+.gitignore
+
+# Python caches / virtualenvs
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.idea/
+.vscode/
+
+# Data / model caches / docker volumes
+pgdata/
+hf_cache/
+models/
+.cache/
+
+# Docs & dev-only files (not needed at runtime)
+README.md
+PLAN.md
+docker-compose*.yml
