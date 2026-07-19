@@ -100,6 +100,12 @@ Schreib **oder sprich** deinem Bot in Telegram:
 **Befehle:** `/start` · `/help` (Kurzanleitung), `/digest` (Tagesüberblick jetzt),
 `/review` (Wochenrückblick jetzt), `/reset` (Gespräch/Gedächtnis zurücksetzen).
 
+> **Proaktive Briefings abschalten:** Die automatischen Digests/Reviews lassen sich in der
+> `.env` explizit ausschalten — `DIGEST_ENABLED=false` bzw. `REVIEW_ENABLED=false`. Dann
+> verschickt der Bot **nichts** mehr von selbst; die Befehle `/digest` und `/review` bleiben
+> für den manuellen Abruf trotzdem verfügbar. (Die Uhrzeiten `DIGEST_HOUR` / `REVIEW_*` steuern
+> nur *wann* automatisch gesendet wird.)
+
 ## Web-Dashboard
 Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
 **[http://localhost:8001](http://localhost:8001)**:

@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     # Locale
     timezone: str = "Europe/Vienna"
 
+    # Proactive briefings: explicit on/off switches for the scheduled loops.
+    # Turning these off does NOT disable the manual /digest and /review commands.
+    digest_enabled: bool = True
+    review_enabled: bool = True
+
     # Daily digest: local hour (0-23) to send the morning summary; outside 0-23 = off
     digest_hour: int = 8
 

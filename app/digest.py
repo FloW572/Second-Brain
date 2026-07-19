@@ -77,6 +77,9 @@ def _should_send_weekly(now_local: datetime, last_sent: date | None,
 
 
 async def digest_loop(bot, pool, anthropic, settings):
+    if not settings.digest_enabled:
+        logger.info("Täglicher Digest deaktiviert (DIGEST_ENABLED=false); /digest bleibt nutzbar.")
+        return
     if not (0 <= settings.digest_hour <= 23):
         logger.info("Täglicher Digest deaktiviert (DIGEST_HOUR=%s).", settings.digest_hour)
         return
@@ -100,6 +103,9 @@ async def digest_loop(bot, pool, anthropic, settings):
 
 
 async def review_loop(bot, pool, anthropic, settings):
+    if not settings.review_enabled:
+        logger.info("Wöchentliches Review deaktiviert (REVIEW_ENABLED=false); /review bleibt nutzbar.")
+        return
     if not (0 <= settings.review_hour <= 23 and 0 <= settings.review_weekday <= 6):
         logger.info("Wöchentliches Review deaktiviert (REVIEW_WEEKDAY=%s, REVIEW_HOUR=%s).",
                     settings.review_weekday, settings.review_hour)
