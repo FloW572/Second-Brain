@@ -1,5 +1,6 @@
 """Tools the query agent (Claude) can call to inspect the second brain."""
 import logging
+import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -27,10 +28,21 @@ RESEARCH_SYSTEM = (
     "typgerechten Fakten. Beispiele: Hotel/Restaurant -> Adresse, Telefon, Website, Bewertung, "
     "Preisniveau; Unternehmen -> Branche, Standort, Website; Buch -> Autor, Jahr, Thema.\n"
     "- Nutze die Websuche und stütze jeden Fakt auf die Suchergebnisse. Erfinde nichts.\n"
-    "- Gib die Fakten als reinen Text zurück: pro Zeile ein Fakt im Format 'Label: Wert', "
-    "keine Aufzählungszeichen, keine Einleitung, kein Schlusssatz, kein Markdown.\n"
+    "- Kommentiere deine Suche NICHT: keine Sätze wie 'Ich suche…' oder 'Ich habe genug "
+    "Informationen…', keine Einleitung, kein Schlusssatz, kein Markdown.\n"
+    "- Deine gesamte Antwort besteht AUSSCHLIESSLICH aus den Fakten-Zeilen, je eine pro Zeile "
+    "im Format 'Label: Wert' (z.B. 'Adresse: …', 'Telefon: …', 'Bewertung: …'). Keine "
+    "Aufzählungszeichen.\n"
     f"- Findest du keine verlässlichen Informationen, antworte NUR mit '{_NO_FACTS}'."
 )
+
+# The web-search model wraps cited text in <cite index="…">…</cite> markup — strip such tags.
+_TAG_RE = re.compile(r"<[^>]+>")
+# A fact line is a short label, a colon, then a value — this shape lets us keep the real
+# facts and drop any search narration the web-search model emits alongside them.
+_FACT_LINE_RE = re.compile(r"^[^:\n]{2,40}:\s*\S")
+# A previously appended facts block, so re-enriching refreshes it instead of stacking.
+_FACTS_BLOCK_RE = re.compile(r"\n*Fakten \(Stand [^)]*\):.*\Z", re.DOTALL)
 
 _MAX_RESEARCH_TURNS = 3   # server web-search loop may pause_turn; bound the continuations
 _MAX_FACTS = 3
@@ -414,7 +426,10 @@ async def _research_facts(anthropic, settings, item: dict, focus: str | None) ->
     facts = []
     for raw in text.splitlines():
         line = raw.strip().lstrip("-•*").strip()   # tolerate stray bullet markers
-        if line and _NO_FACTS not in line:
+        line = _TAG_RE.sub("", line).strip()       # strip web-search citation markup (<cite …>)
+        # Keep only 'Label: Wert' lines; this drops the web-search model's narration
+        # ("I'll search…", "I have sufficient information…") that isn't a fact.
+        if line and _NO_FACTS not in line and _FACT_LINE_RE.match(line):
             facts.append(line)
     return facts[:_MAX_FACTS]
 
@@ -446,7 +461,8 @@ async def enrich_item(anthropic, pool, settings, args) -> dict:
 
     today = datetime.now(ZoneInfo(settings.timezone)).date().isoformat()
     block = f"Fakten (Stand {today}):\n" + "\n".join(f"- {f}" for f in facts)
-    existing = (item["content"] or "").strip()
+    # Drop any earlier facts block so re-enriching refreshes rather than stacks.
+    existing = _FACTS_BLOCK_RE.sub("", item["content"] or "").strip()
     new_content = f"{existing}\n\n{block}" if existing else block
 
     # Reuse update_item so the content change is persisted and re-embedded consistently.
