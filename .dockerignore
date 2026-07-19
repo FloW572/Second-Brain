@@ -31,3 +31,5 @@ models/
 README.md
 PLAN.md
 docker-compose*.yml
+docs/
+.github/

@@ -1,9 +1,29 @@
 # Second Brain 🧠
 
+[![CI](https://github.com/FloW572/Second-Brain/actions/workflows/ci.yml/badge.svg)](https://github.com/FloW572/Second-Brain/actions/workflows/ci.yml)
+
 Ein persönliches, selbst gehostetes „Second Brain": Todos, Ideen, Projekte und Notizen
 werden per **Telegram** — als **Text oder Sprachnachricht** — vom Handy erfasst, in
 **PostgreSQL + pgvector** gespeichert und von **Claude** ausgewertet, z.B.
 *„Was sollte ich heute zuerst tun?"*. Fällige Todos meldet der Bot **proaktiv** als Erinnerung.
+
+## Demo
+
+<!-- TODO Medien einfügen: ein kurzes GIF vom Telegram-Chat (erfassen → fragen → begründete
+     Antwort) und 1–2 Dashboard-Screenshots. Dateien unter docs/ ablegen und die Zeilen unten
+     aktivieren (die # entfernen). Siehe docs/README.md. -->
+<!-- ![Telegram-Bot: erfassen und fragen](docs/demo.gif) -->
+<!-- ![Web-Dashboard](docs/dashboard.png) -->
+
+**Was dieses Projekt beinhaltet — in 30 Sekunden:**
+- **RAG in echt:** hybride Suche (Vektor **+** deutscher Volltext, RRF-Fusion, Distanz-Schwelle)
+  über selbst erfasste Notizen — eine bewusst getunte Retrieval-Pipeline, kein Framework-Copy-paste.
+- **Agentische Tool-Nutzung:** Claude liest und verändert die echten Daten über Tools, statt zu raten.
+- **Gemessen statt geraten:** ein **Eval-Harness** bewertet Router-, Extraktions-, Retrieval- und
+  Antwort-Qualität (hit@k, MRR, LLM-as-Judge) — siehe [Evals](#evals).
+- **Betreibbar:** Kosten-/Token-/Latenz-Logging + `/stats`; self-hosted per Docker mit **lokalen**
+  Embeddings und **lokaler** Spracherkennung (Datenhoheit).
+- **Engineering:** klare Modul-Trennung, idempotente Migrationen, Unit-Tests + CI.
 
 ## Architektur
 
