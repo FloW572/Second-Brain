@@ -1,7 +1,8 @@
 """Turn a free-text message into structured fields using Claude (forced tool call)."""
 import logging
-from datetime import date
+from datetime import datetime
 from typing import cast
+from zoneinfo import ZoneInfo
 
 from app.models import ITEM_TYPES, CaptureData
 
@@ -25,10 +26,12 @@ STRUCTURE_TOOL = {
                 "type": ["string", "null"],
                 "description": "Name of a project this belongs to, if mentioned; else null.",
             },
-            "due_date": {
+            "due_at": {
                 "type": ["string", "null"],
-                "description": "Due date as ISO YYYY-MM-DD, resolved from relative terms "
-                               "(e.g. 'morgen') against today; null if none.",
+                "description": "Due date/time as ISO — 'YYYY-MM-DD' if only a day is meant, or "
+                               "'YYYY-MM-DDTHH:MM' if a time is mentioned. Resolve relative terms "
+                               "('morgen', 'nächste Woche', 'Freitag', 'heute 19 Uhr') against the "
+                               "current date/time given in the system prompt; null if none.",
             },
             "priority": {
                 "type": ["integer", "null"],
@@ -41,13 +44,13 @@ STRUCTURE_TOOL = {
 }
 
 
-async def extract_structure(anthropic, text: str, settings, today: str | None = None) -> CaptureData:
-    today = today or date.today().isoformat()
+async def extract_structure(anthropic, text: str, settings, now: str | None = None) -> CaptureData:
+    now = now or datetime.now(ZoneInfo(settings.timezone)).isoformat(timespec="minutes")
     system = (
-        f"Heute ist {today}. Du extrahierst aus einer kurzen Notiz strukturierte Felder "
-        f"für ein persönliches Second-Brain-System. Löse relative Datumsangaben "
-        f"('morgen', 'nächste Woche', 'Freitag') gegen das heutige Datum auf. "
-        f"Halte den Titel kurz und prägnant. Antworte ausschließlich über das Tool."
+        f"Aktuelle Zeit: {now} (Zeitzone {settings.timezone}). Du extrahierst aus einer kurzen "
+        f"Notiz strukturierte Felder für ein persönliches Second-Brain-System. Löse relative "
+        f"Datums- und Zeitangaben ('morgen', 'nächste Woche', 'Freitag', 'heute 19 Uhr') gegen "
+        f"die aktuelle Zeit auf. Halte den Titel kurz und prägnant. Antworte ausschließlich über das Tool."
     )
     try:
         resp = await anthropic.messages.create(

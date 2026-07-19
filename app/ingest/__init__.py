@@ -1,7 +1,7 @@
 """Ingestion pipeline: free text -> structured fields -> embedding -> stored item."""
 import logging
-from datetime import date
 
+from app.duetime import parse_due
 from app.ingest.embed import embed_text, to_vector_literal
 from app.ingest.extract import extract_structure
 from app.ingest.normalize import normalize_capture
@@ -18,23 +18,13 @@ _TYPE_LABEL = {
 }
 
 
-def _parse_date(value: str | None):
-    if not value:
-        return None
-    try:
-        return date.fromisoformat(value)
-    except (ValueError, TypeError):
-        logger.warning("Unparseable due_date %r — ignoring", value)
-        return None
-
-
 def _confirmation(data: dict, project_name: str | None, due) -> str:
     emoji, label = _TYPE_LABEL.get(data["type"], ("📝", "Notiz"))
     lines = [f'{emoji} {label}: {data["title"]}']
     if project_name:
         lines.append(f"📁 Projekt: {project_name}")
     if due:
-        lines.append(f"📅 Fällig: {due.isoformat()}")
+        lines.append(f"📅 Fällig: {due.strftime('%Y-%m-%d %H:%M')}")
     if data["priority"]:
         lines.append("❗ Priorität: " + {1: "hoch", 2: "mittel", 3: "niedrig"}[data["priority"]])
     if data["tags"]:
@@ -50,7 +40,7 @@ async def capture(pool, anthropic, text: str, source: str, settings) -> str:
     emb_lit = to_vector_literal(
         await embed_text(f"{data['title']}\n{data['content'] or ''}", settings.embedding_model)
     )
-    due = _parse_date(data["due_date"])
+    due = parse_due(data["due_at"], settings.timezone)
 
     async with pool.connection() as conn:
         project_id, project_name = await resolve_project(conn, data["project_hint"])
@@ -59,7 +49,7 @@ async def capture(pool, anthropic, text: str, source: str, settings) -> str:
                 """
                 INSERT INTO items
                     (type, title, content, project_id, status, priority,
-                     due_date, tags, source, raw_input, embedding)
+                     due_at, tags, source, raw_input, embedding)
                 VALUES
                     (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
                 RETURNING id
