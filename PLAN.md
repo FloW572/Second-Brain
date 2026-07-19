@@ -241,8 +241,7 @@ Pfad ausgelöst; normale Abfragen verursachen keine Suchkosten.
 
 ### 🔮 Phase 5 — Betrieb & Beobachtbarkeit (optional, nach v1.0)
 
-Kein Blocker für v1.0 (Einzelnutzer-Betrieb; Logging genügt), aber sinnvoller Ausbau — und ein
-gutes Portfolio-Signal:
+Kein Blocker für v1.0 (Einzelnutzer-Betrieb; Logging genügt), aber sinnvoller Ausbau 
 
 - [ ] **Beobachtbarkeit** — strukturierte Logs, einfache Metriken (Anzahl Anfragen, Latenz) und
       Token-/Kosten-Logging pro Anthropic-Aufruf; optional leichtes Tracing.
