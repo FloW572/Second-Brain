@@ -12,8 +12,10 @@ ROUTE_TOOL = {
             "intent": {
                 "type": "string",
                 "enum": ["capture", "query"],
-                "description": "capture = new information to store (todo/idea/note). "
-                               "query = a question / request to reason over stored data.",
+                "description": "capture = new information to store (todo/idea/note/reference). "
+                               "query = anything about ALREADY-stored data: questions, analysis, "
+                               "OR changes/actions on existing items (edit, rename, reschedule, "
+                               "set priority/status, complete, delete).",
             }
         },
         "required": ["intent"],
@@ -21,11 +23,16 @@ ROUTE_TOOL = {
 }
 
 SYSTEM = (
-    "Entscheide, ob die Nachricht NEUE Information zum Speichern ist (capture) oder eine "
-    "FRAGE bzw. Bitte um Auswertung der gespeicherten Daten (query). "
-    "Beispiele capture: 'Idee: App für X', 'morgen Rechnung zahlen'. "
-    "Beispiele query: 'Was soll ich heute tun?', 'Welche Ideen habe ich zu X?', "
-    "'Zeig mir offene Todos'. Antworte nur über das Tool."
+    "Entscheide die Absicht der Nachricht:\n"
+    "- capture = NEUE Information zum Speichern (ein neues Todo/Idee/Notiz/Referenz).\n"
+    "- query = alles, was sich auf BEREITS gespeicherte Daten bezieht: Fragen, Auswertungen "
+    "ODER Änderungen/Aktionen an bestehenden Einträgen (ändern, umbenennen, verschieben, "
+    "Priorität/Status setzen, erledigt markieren, löschen).\n"
+    "Beispiele capture: 'Idee: App für X', 'morgen Rechnung zahlen', 'Notiz: WLAN-Passwort'.\n"
+    "Beispiele query: 'Was soll ich heute tun?', 'Welche Ideen habe ich zu X?', 'Zeig mir offene Todos', "
+    "'Setz Auto verkaufen auf hohe Priorität', 'verschiebe X auf morgen', 'markiere X als erledigt', "
+    "'lösche das doppelte Auto verkaufen'.\n"
+    "Im Zweifel, ob es eine Änderung an Bestehendem ist: query. Antworte nur über das Tool."
 )
 
 
