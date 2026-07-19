@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS documents (
     filename     TEXT NOT NULL,
     content_type TEXT,
     size_bytes   BIGINT,
+    note         TEXT,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS documents_project_idx ON documents (project_id);

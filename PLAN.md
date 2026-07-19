@@ -88,7 +88,7 @@ Handy ──Telegram──▶ Bot (Long-Polling)        Browser ──HTTP :8001
 | Proaktiv  | `app/reminders.py`, `app/digest.py`  | Erinnerungs-Loop, täglicher Digest & wöchentliches Review |
 | Dokumente | `app/documents.py`                   | Datei-Anhänge je Projekt (Bytes im Volume, Metadaten in DB) |
 | Dashboard | `app/web/main.py`, `app/web/templates/` | FastAPI-Weboberfläche (browsen, suchen, bearbeiten, Dokumente) |
-| Daten     | `migrations/001_init.sql`, `002_add_reminders.sql`, `003_documents.sql`, `app/db.py`, `app/models.py` | Schema + Migrationen, Connection-Pool, Typen |
+| Daten     | `migrations/001_init.sql`, `002_add_reminders.sql`, `003_documents.sql`, `004_document_notes.sql`, `app/db.py`, `app/models.py` | Schema + Migrationen, Connection-Pool, Typen |
 
 ### Datenfluss & Datenschutz
 
@@ -126,16 +126,18 @@ Definiert in [`migrations/001_init.sql`](migrations/001_init.sql).
 - `embedding VECTOR(1024)` — **Dimension muss zu `EMBEDDING_MODEL` passen** (bge-m3 = 1024)
 - `fts TSVECTOR` — generierte Spalte (deutsche Textsuche über `title` + `content`)
 
-**`documents`** (Migration 003) — Datei-Anhänge je Projekt: `id`, `project_id` → `projects`
-(FK, `ON DELETE CASCADE`), `filename`, `content_type`, `size_bytes`, `created_at`. Die
-Datei-**Bytes** liegen im Volume `docdata` (`DOCS_DIR/<id>`), nur die **Metadaten** in der DB.
+**`documents`** (Migration 003, `note` seit 004) — Datei-Anhänge je Projekt: `id`, `project_id`
+→ `projects` (FK, `ON DELETE CASCADE`), `filename`, `content_type`, `size_bytes`, `note`
+(freier Kommentar), `created_at`. Die Datei-**Bytes** liegen im Volume `docdata` (`DOCS_DIR/<id>`),
+nur die **Metadaten** in der DB.
 
 **Indizes:** HNSW auf `embedding` (Cosine), GIN auf `fts`, B-Tree auf `due_at`,
 `project_id`, `(type, status)` sowie `documents(project_id)`. Trigger halten `updated_at` aktuell.
 
 > **Migrationen:** `002_add_reminders.sql` hob `due_date DATE` → `due_at TIMESTAMPTZ` an und
-> ergänzte `reminded_at`; `003_documents.sql` legte die `documents`-Tabelle an. Beide sind
-> idempotent; Neuinstallationen erhalten die Endform bereits aus `001_init.sql`.
+> ergänzte `reminded_at`; `003_documents.sql` legte die `documents`-Tabelle an;
+> `004_document_notes.sql` ergänzte die Kommentar-Spalte `note`. Alle idempotent;
+> Neuinstallationen erhalten die Endform bereits aus `001_init.sql`.
 
 ---
 
@@ -208,8 +210,7 @@ Pfad ausgelöst; normale Abfragen verursachen keine Suchkosten.
       Items browsen/filtern, semantische Suche, bearbeiten/erledigen/löschen; Projekt-Ansicht;
       nutzt dieselben Tool-Handler wie der Bot
 - [x] **Dokumente** — Dateien (xlsx/PDF/Bilder) pro Projekt ablegen, per Dashboard **und** per
-      Telegram (Bildunterschrift = Projekt). Bytes im Volume, Metadaten in der DB
-      (`app/documents.py`, Migration 003)
+      Telegram. Bytes im Volume, Metadaten in der DB (`app/documents.py`, Migration 003)
 - [ ] **Kalender-Integration** (nice-to-have, zurückgestellt) — `.ics`-Export/Abo der Fälligkeiten
       für die Handy-Kalender-App. Bewusst zurückgestellt: die Erinnerungen decken den Kernbedarf
       (rechtzeitig informiert werden) bereits ab; der Kalender wäre nur die Anzeige.
@@ -238,6 +239,10 @@ Pfad ausgelöst; normale Abfragen verursachen keine Suchkosten.
       gelernt/festgehalten habe: neue Notizen/Ideen und erledigte Todos der letzten 7 Tage,
       plus 1-3 kurze Erkenntnisse. Basiert auf dem neuen Tool `list_recent` (Einträge nach
       Änderungszeit), das auch für normale Fragen („was habe ich diese Woche notiert?") nutzbar ist.
+- [x] **Datei-Kommentare** — die Telegram-Bildunterschrift ist jetzt ein freier Kommentar
+      (z.B. Ort/Begebenheit) und wird mit der Datei gespeichert (`note`, Migration 004); ein
+      optionales `#Projektname` darin ordnet die Datei einem Projekt zu. Im Dashboard werden
+      Kommentare angezeigt, sind dort inline editierbar und lassen sich schon beim Hochladen angeben.
 
 ### 🔮 Phase 5 — Betrieb & Beobachtbarkeit (optional, nach v1.0)
 
@@ -283,7 +288,7 @@ Kein Blocker für v1.0 (Einzelnutzer-Betrieb; Logging genügt), aber sinnvoller 
 
 - **Tests:** `pytest` — deckt reine Logik ohne DB/API ab
   (`tests/test_normalize.py`, `test_search.py`, `test_embed.py`, `test_duetime.py`,
-  `test_memory.py`, `test_digest.py`).
+  `test_memory.py`, `test_digest.py`, `test_caption.py`).
 - **Start:** `docker compose up -d --build`, danach Logs bis
   „Second Brain ist bereit. 🧠".
 - **DB inspizieren:** siehe [README](README.md#datenbank-inspizieren).
