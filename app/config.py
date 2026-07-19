@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     review_weekday: int = 6
     review_hour: int = 18
 
+    # Document storage: file bytes on disk (a volume); only metadata in the DB
+    docs_dir: str = "/data/documents"
+
     @property
     def allowed_user_ids(self) -> set[int]:
         return {int(x.strip()) for x in self.allowed_telegram_user_ids.split(",") if x.strip()}

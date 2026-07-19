@@ -18,6 +18,31 @@
 </nav>
 {% endif %}
 
+{% if project_name %}
+<section class="docs">
+  <h3>📎 Dokumente</h3>
+  {% for d in documents %}
+  <div class="doc">
+    <a class="doc-name" href="/documents/{{ d.id }}">{{ d.filename }}</a>
+    <span class="doc-size">{{ d.size_display }}</span>
+    <form method="post" action="/documents/{{ d.id }}/delete"
+          onsubmit="return confirm('Dokument {{ d.filename }} löschen?')">
+      <button class="btn danger">🗑</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="doc-empty">Noch keine Dokumente.</p>
+  {% endfor %}
+  {% if project_id %}
+  <form class="doc-upload" method="post" action="/projects/{{ project_id }}/documents"
+        enctype="multipart/form-data">
+    <input type="file" name="file" required>
+    <button class="btn ok" type="submit">⬆ Hochladen</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
 {% if not items %}
   <p class="empty">Keine Einträge{% if q %} für „{{ q }}"{% endif %}.</p>
 {% endif %}

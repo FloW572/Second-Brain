@@ -9,7 +9,9 @@ from telegram.ext import ContextTypes
 
 from app.bot.router import classify
 from app.digest import send_digest, send_review
+from app.documents import store_document
 from app.ingest import capture
+from app.ingest.projects import resolve_project
 from app.query.agent import answer
 from app.transcribe import transcribe_file
 
@@ -139,3 +141,61 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     await update.message.reply_text(f"🎙️ Verstanden: „{text}“")
     await _handle_text(update, context, text, "telegram_voice")
+
+
+async def _store_incoming_file(update, context, content: bytes,
+                               filename: str, content_type: str | None) -> None:
+    """Store an uploaded file; a caption (if any) names the project to attach it to."""
+    settings = context.bot_data["settings"]
+    pool = context.bot_data["pool"]
+    caption = (update.message.caption or "").strip()
+    project_name = None
+    project_id = None
+    if caption:
+        async with pool.connection() as conn:
+            project_id, project_name = await resolve_project(conn, caption)
+    await store_document(pool, settings.docs_dir, project_id, filename, content_type, content)
+    if project_name:
+        await update.message.reply_text(
+            f"📎 „{filename}“ gespeichert – Projekt: {project_name}."
+        )
+    else:
+        await update.message.reply_text(
+            f"📎 „{filename}“ gespeichert (ohne Projekt).\n"
+            "Tipp: Projektnamen als Bildunterschrift mitschicken oder im Dashboard zuordnen."
+        )
+
+
+async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data["settings"]
+    if not _is_allowed(update.effective_user.id, settings):
+        await update.message.reply_text("⛔ Nicht berechtigt.")
+        return
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
+    doc = update.message.document
+    try:
+        tg_file = await context.bot.get_file(doc.file_id)
+        content = bytes(await tg_file.download_as_bytearray())
+    except Exception:
+        logger.exception("document download failed")
+        await update.message.reply_text("⚠️ Konnte das Dokument nicht laden.")
+        return
+    filename = doc.file_name or f"dokument_{doc.file_unique_id}"
+    await _store_incoming_file(update, context, content, filename, doc.mime_type)
+
+
+async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data["settings"]
+    if not _is_allowed(update.effective_user.id, settings):
+        await update.message.reply_text("⛔ Nicht berechtigt.")
+        return
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
+    photo = update.message.photo[-1]  # largest resolution
+    try:
+        tg_file = await context.bot.get_file(photo.file_id)
+        content = bytes(await tg_file.download_as_bytearray())
+    except Exception:
+        logger.exception("photo download failed")
+        await update.message.reply_text("⚠️ Konnte das Bild nicht laden.")
+        return
+    await _store_incoming_file(update, context, content, f"foto_{photo.file_unique_id}.jpg", "image/jpeg")

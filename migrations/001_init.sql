@@ -40,6 +40,18 @@ CREATE INDEX IF NOT EXISTS items_due_at_idx      ON items (due_at);
 CREATE INDEX IF NOT EXISTS items_project_idx     ON items (project_id);
 CREATE INDEX IF NOT EXISTS items_type_status_idx ON items (type, status);
 
+-- Files (xlsx / pdf / images) attached to a project. Bytes live on disk (a volume);
+-- this table holds only metadata. The file on disk is named after the row id.
+CREATE TABLE IF NOT EXISTS documents (
+    id           SERIAL PRIMARY KEY,
+    project_id   INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    filename     TEXT NOT NULL,
+    content_type TEXT,
+    size_bytes   BIGINT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS documents_project_idx ON documents (project_id);
+
 -- Keep updated_at fresh on UPDATE.
 CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
 BEGIN

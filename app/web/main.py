@@ -8,12 +8,13 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
 from app.db import close_pool, init_pool
+from app.documents import delete_document, doc_path, get_document, list_documents, store_document
 from app.query.tools import _complete_item, _delete_item, _update_item
 from app.search import hybrid_search
 
@@ -75,6 +76,8 @@ async def _project_name(pid: int) -> str | None:
 @app.get("/")
 async def index(request: Request, type: str = "", q: str = "", project: str = ""):
     project_name = None
+    project_id = None
+    documents: list[dict] = []
     if q:
         hits = await hybrid_search(_pool, settings, q, None, 30)
         ids = [h["id"] for h in hits]
@@ -82,9 +85,12 @@ async def index(request: Request, type: str = "", q: str = "", project: str = ""
     elif project == "none":
         items = await _fetch("WHERE i.project_id IS NULL")
         project_name = "Ohne Projekt"
+        documents = await list_documents(_pool, None)
     elif project.isdigit():
-        items = await _fetch("WHERE i.project_id = %(pid)s", {"pid": int(project)})
-        project_name = await _project_name(int(project))
+        project_id = int(project)
+        items = await _fetch("WHERE i.project_id = %(pid)s", {"pid": project_id})
+        project_name = await _project_name(project_id)
+        documents = await list_documents(_pool, project_id)
     elif type in TYPE_EMOJI:
         items = await _fetch("WHERE i.type = %(type)s", {"type": type})
     else:
@@ -92,8 +98,38 @@ async def index(request: Request, type: str = "", q: str = "", project: str = ""
     return templates.TemplateResponse(
         request=request, name="index.html",
         context={"items": items, "active_type": type, "q": q,
-                 "project_name": project_name, "type_emoji": TYPE_EMOJI},
+                 "project_name": project_name, "project_id": project_id,
+                 "documents": documents, "type_emoji": TYPE_EMOJI},
     )
+
+
+@app.post("/projects/{pid}/documents")
+async def upload_document(pid: int, file: UploadFile = File(...)):
+    content = await file.read()
+    if content:
+        await store_document(_pool, settings.docs_dir, pid,
+                             file.filename or "dokument", file.content_type, content)
+    return RedirectResponse(f"/?project={pid}", status_code=303)
+
+
+@app.get("/documents/{doc_id}")
+async def download_document(doc_id: int):
+    meta = await get_document(_pool, doc_id)
+    if not meta:
+        return RedirectResponse("/", status_code=303)
+    path = doc_path(settings.docs_dir, doc_id)
+    if not path.exists():
+        return RedirectResponse("/", status_code=303)
+    return FileResponse(path, filename=meta["filename"],
+                        media_type=meta["content_type"] or "application/octet-stream")
+
+
+@app.post("/documents/{doc_id}/delete")
+async def remove_document(doc_id: int):
+    meta = await get_document(_pool, doc_id)
+    await delete_document(_pool, settings.docs_dir, doc_id)
+    pid = meta["project_id"] if meta else None
+    return RedirectResponse(f"/?project={pid}" if pid else "/?project=none", status_code=303)
 
 
 @app.get("/projects")

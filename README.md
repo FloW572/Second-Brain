@@ -88,9 +88,15 @@ Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
 - alle Einträge browsen und nach Typ filtern
 - semantische Suche (dieselbe hybride Suche wie im Bot)
 - Einträge **bearbeiten, erledigen, löschen** per Klick
+- **Projekte** durchklicken und je Projekt **Dokumente** (xlsx/PDF/Bilder) hochladen & herunterladen
 
 Sie liest dieselbe Datenbank und nutzt dieselben Aktions-Handler wie der Bot — beide
 Oberflächen bleiben also konsistent. (Host-Port 8001, falls 8000 belegt ist.)
+
+**Dokumente** gehen auch **per Telegram**: schick dem Bot eine Datei oder ein Foto — die
+**Bildunterschrift** bestimmt das Projekt (ohne Bildunterschrift landet es unter „Ohne Projekt"
+und lässt sich später im Dashboard zuordnen). Dateien liegen im Volume `docdata`, nur die
+Metadaten in der DB.
 
 ## Datenbank inspizieren
 ```bash
