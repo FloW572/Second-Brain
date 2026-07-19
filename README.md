@@ -8,36 +8,46 @@ werden per **Telegram** — als **Text oder Sprachnachricht** — vom Handy erfa
 ## Architektur
 
 ```
-Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)
- Text │ 🎙️ Voice                       ├─ Voice: faster-whisper (lokal) → Text
-                                        ├─ Router (Claude Haiku): capture | query?
+Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Browser ──▶ Web-Dashboard :8001
+ Text · 🎙 Voice · Datei/Foto           ├─ Voice: faster-whisper (lokal) → Text
+                                        ├─ Router (Claude Haiku): capture | query
                                         ├─ Capture: Claude strukturiert → Embedding (lokal) → DB
-                                        ├─ Query: agentischer Claude-Loop (Opus) mit Tools über die DB
-                                        └─ Reminder-Loop (asyncio): fällige Todos → Push
+                                        ├─ Query: agentischer Claude-Loop (Opus) mit Tools
+                                        │    └─ enrich_item → Anthropic-Websuche → Fakten
+                                        └─ Loops: Erinnerungen · Tages-Digest · Wochen-Review
                                         │
                                         ▼
                               PostgreSQL 16 + pgvector
-                              (projects, items + embedding + fts)
+                              (projects · items[+embedding+fts] · documents) + Datei-Volume
 ```
 
 - **Erfassen:** Text oder Sprachnachricht (Voice wird lokal transkribiert) → Claude extrahiert
   Typ/Titel/Fälligkeit (mit Uhrzeit)/Priorität/Projekt/Tags → lokales, multilinguales Embedding
   (bge-m3) → gespeichert.
 - **Fragen & Handeln:** Claude nutzt Tools, liest bzw. verändert die echten Daten und antwortet
-  begründet — statt zu raten.
+  begründet — statt zu raten; für Rückfragen merkt es sich den Gesprächskontext.
+- **Anreichern:** „Ergänze Referenz X um relevante Fakten" → Claude recherchiert per **Websuche**
+  die wichtigsten Fakten (z.B. Adresse/Telefon/Bewertung) und hängt sie an den Eintrag an.
 - **Erinnern:** Ein Hintergrund-Loop prüft jede Minute fällige, offene Todos und schickt genau
   **eine** proaktive Telegram-Nachricht pro Todo.
+- **Proaktiv:** täglicher **Digest** (Morgenüberblick) und wöchentliches **Review** (Rückblick +
+  Fokus), automatisch zur eingestellten Zeit oder on-demand per `/digest` / `/review`.
 
 ## Funktionen
 
 | Bereich | Was |
 |---|---|
 | **Erfassen** | Freitext **und Sprachnachrichten** → strukturierte Todos / Ideen / Notizen / Referenzen |
-| **Suche** | hybrid: semantisch (pgvector) **+** deutscher Volltext, fusioniert mit RRF |
+| **Suche** | hybrid: semantisch (pgvector) **+** deutscher Volltext, fusioniert mit RRF, mit Distanz-Schwelle |
 | **Fragen** | agentischer Claude-Loop, begründete Antworten aus den echten Daten |
+| **Gedächtnis** | kurzes Konversations-Gedächtnis pro Chat für Rückfragen; `/reset` startet neu |
 | **Bearbeiten** | `update_item` (Titel/Inhalt/Typ/Fälligkeit/Priorität/Status/Projekt/Tags), `complete_item`, `delete_item` |
-| **Anreichern** | „Ergänze Referenz X um relevante Fakten" → Claude recherchiert per **Websuche** die wichtigsten typgerechten Fakten (Hotel: Adresse/Telefon/Bewertung usw.) und hängt sie an den Inhalt an |
+| **Projekte** | automatische Zuordnung beim Erfassen; `create_project`; Projekt-Ansicht im Dashboard |
+| **Anreichern** | „Ergänze Eintrag X um relevante Fakten" → Claude recherchiert per **Websuche** die wichtigsten typgerechten Fakten (Hotel: Adresse/Telefon/Bewertung usw.) und hängt sie an den Inhalt an (für jeden Eintragstyp) |
 | **Erinnerungen** | proaktive Benachrichtigung zu fälligen Todos (uhrzeitgenau, Zeitzone `TIMEZONE`) |
+| **Digest & Review** | täglicher Morgenüberblick + wöchentlicher Rückblick, automatisch oder per `/digest` / `/review` |
+| **Dokumente** | Dateien (xlsx/PDF/Bilder) je Projekt — per Telegram **und** Dashboard; Bytes im Volume, Metadaten in der DB |
+| **Web-Dashboard** | FastAPI-Oberfläche zum Browsen, Suchen, Bearbeiten und Verwalten der Dokumente (Port 8001) |
 
 ### Agent-Tools
 
@@ -81,9 +91,14 @@ Schreib **oder sprich** deinem Bot in Telegram:
 - `Idee: wiederkehrende Rechnungen automatisch erkennen` → als Idee gespeichert
 - `morgen 9 Uhr KFZ-Versicherung kündigen, Projekt Finanzen, wichtig` → Todo mit Fälligkeit + Uhrzeit + Projekt
 - 🎙️ Sprachnachricht → wird transkribiert und wie Text verarbeitet
+- 📎 Datei/Foto (mit Projekt als Bildunterschrift) → als Dokument dem Projekt zugeordnet
 - `Was soll ich heute zuerst machen?` → priorisierte, begründete Antwort
 - `Setz "KFZ-Versicherung kündigen" auf hohe Priorität` → bearbeitet den Eintrag
+- `Ergänze Referenz Quellenhof Südtirol um relevante Fakten` → recherchiert per Websuche und hängt die Fakten an (dauert ~1–2 Min, „tippt…" bleibt sichtbar)
 - `Lösche das Todo #7` → löscht den Eintrag
+
+**Befehle:** `/start` · `/help` (Kurzanleitung), `/digest` (Tagesüberblick jetzt),
+`/review` (Wochenrückblick jetzt), `/reset` (Gespräch/Gedächtnis zurücksetzen).
 
 ## Web-Dashboard
 Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
@@ -115,7 +130,10 @@ liegen als nummerierte, **idempotente** Dateien vor und werden bei einer bestehe
 angewandt, z.B.:
 ```bash
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/002_add_reminders.sql
+docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/003_documents.sql
 ```
+`002` hebt `due_date` → `due_at` (mit Uhrzeit) an und ergänzt `reminded_at`; `003` legt die
+`documents`-Tabelle an.
 
 ## Tests
 ```bash
@@ -133,12 +151,17 @@ sie brauchen weder DB noch API.
   (`tiny`…`large-v3`), Sprache über `WHISPER_LANGUAGE` (`de` oder `auto`).
 - **Claude** (Router/Extraktion = Haiku, Reasoning = Opus) wird über die Anthropic API genutzt;
   Nachrichtentexte werden dorthin gesendet.
+- **Websuche:** Die Fakten-Anreicherung (`enrich_item`) nutzt das Server-Tool `web_search` der
+  Anthropic-API. Es muss für den API-Key freigeschaltet sein und kostet pro Suche ein paar Cent —
+  wird aber **nur** beim Anreichern ausgelöst, normale Abfragen bleiben suchfrei.
 
 ## Roadmap
 - **Phase 1 (fertig):** Erfassen, hybride Suche, agentische Abfragen, Docker.
 - **Phase 2 (fertig):** Sprachnachrichten, Uhrzeiten (`TIMESTAMPTZ`), Erinnerungen,
-  `update_item` / `delete_item`, robusteres Routing.
-- **Phase 3 (läuft):** Konversations-Gedächtnis ✓, täglicher Digest ✓, wöchentliches Review ✓,
-  Web-Dashboard ✓; offen: Kalender-Integration.
+  `update_item` / `delete_item`, `create_project`, robusteres Routing.
+- **Phase 3 (fertig):** Konversations-Gedächtnis, täglicher Digest, wöchentliches Review,
+  Web-Dashboard, Dokumente je Projekt; zurückgestellt: Kalender-Integration.
+- **Phase 4 (fertig):** Fakten-Anreicherung per Websuche (`enrich_item`), durchgehende
+  „tippt…"-Anzeige bei langen Antworten.
 
 Siehe den vollständigen Plan in [PLAN.md](PLAN.md).
