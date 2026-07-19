@@ -79,6 +79,23 @@ TOOLS = [
         },
     },
     {
+        "name": "list_recent",
+        "description": "Liste Einträge, die kürzlich hinzugekommen ODER geändert wurden "
+                       "(Zeitfenster in Tagen, Default 7) — nützlich für 'was habe ich diese "
+                       "Woche notiert / gelernt / erledigt'. Optional nach Typ filtern: "
+                       "['note','idea'] für Festgehaltenes/Gelerntes, ['todo'] für Aufgaben "
+                       "(erledigte erkennst du am Status 'done'). Nach Änderungszeit sortiert.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "days": {"type": "integer", "description": "Zeitfenster in Tagen (Default 7)."},
+                "types": {"type": "array",
+                          "items": {"type": "string", "enum": list(ITEM_TYPES)}},
+                "limit": {"type": "integer"},
+            },
+        },
+    },
+    {
         "name": "search",
         "description": "Hybrid semantic + keyword search across all items (todos, ideas, notes).",
         "input_schema": {
@@ -241,6 +258,34 @@ async def _list_todos(pool, settings, args):
         {"id": r[0], "title": r[1], "status": r[2], "priority": r[3],
          "due_at": r[4].isoformat() if r[4] else None,
          "tags": list(r[5] or []), "project": r[6]}
+        for r in rows
+    ]}
+
+
+async def _list_recent(pool, settings, args):
+    days = int(args.get("days", 7))
+    types = args.get("types")
+    limit = int(args.get("limit", 40))
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT i.id, i.type, i.title, i.content, i.status, i.due_at, i.tags,
+                   p.name, i.created_at, i.updated_at
+            FROM items i LEFT JOIN projects p ON p.id = i.project_id
+            WHERE i.updated_at >= now() - make_interval(days => %(days)s)
+              AND (%(types)s::text[] IS NULL OR i.type = ANY(%(types)s::text[]))
+            ORDER BY i.updated_at DESC
+            LIMIT %(limit)s
+            """,
+            {"days": days, "types": types, "limit": limit},
+        )
+        rows = await cur.fetchall()
+    return {"items": [
+        {"id": r[0], "type": r[1], "title": r[2], "content": r[3], "status": r[4],
+         "due_at": r[5].isoformat() if r[5] else None, "tags": list(r[6] or []),
+         "project": r[7],
+         "created_at": r[8].isoformat() if r[8] else None,
+         "updated_at": r[9].isoformat() if r[9] else None}
         for r in rows
     ]}
 
@@ -476,6 +521,7 @@ _DISPATCH = {
     "now": _now,
     "list_projects": _list_projects,
     "list_todos": _list_todos,
+    "list_recent": _list_recent,
     "search": _search,
     "complete_item": _complete_item,
     "update_item": _update_item,

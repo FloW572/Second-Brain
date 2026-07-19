@@ -46,6 +46,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | **Anreichern** | „Ergänze Eintrag X um relevante Fakten" → Claude recherchiert per **Websuche** die wichtigsten typgerechten Fakten (Hotel: Adresse/Telefon/Bewertung usw.) und hängt sie an den Inhalt an (für jeden Eintragstyp) |
 | **Erinnerungen** | proaktive Benachrichtigung zu fälligen Todos (uhrzeitgenau, Zeitzone `TIMEZONE`) |
 | **Digest & Review** | täglicher Morgenüberblick + wöchentlicher Rückblick, automatisch oder per `/digest` / `/review` |
+| **Lern-Rückblick** | `/recently_learned` — fasst zusammen, was du zuletzt gelernt/festgehalten hast (neue Notizen/Ideen + erledigte Todos der letzten 7 Tage) |
 | **Dokumente** | Dateien (xlsx/PDF/Bilder) je Projekt — per Telegram **und** Dashboard; Bytes im Volume, Metadaten in der DB |
 | **Web-Dashboard** | FastAPI-Oberfläche zum Browsen, Suchen, Bearbeiten und Verwalten der Dokumente (Port 8001) |
 
@@ -57,6 +58,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | `list_projects` | aktive Projekte inkl. Anzahl offener Todos |
 | `list_todos` | Todos, gefiltert nach Status/Fälligkeit/Projekt/Priorität |
 | `search` | hybride semantische + Volltextsuche über alle Einträge |
+| `list_recent` | kürzlich hinzugekommene/geänderte Einträge (Zeitfenster in Tagen, optional Typ-Filter) |
 | `complete_item` | Todo als erledigt markieren |
 | `update_item` | Felder eines Eintrags ändern (partiell; re-embedded bei Textänderung) |
 | `delete_item` | Eintrag endgültig löschen |
@@ -98,7 +100,8 @@ Schreib **oder sprich** deinem Bot in Telegram:
 - `Lösche das Todo #7` → löscht den Eintrag
 
 **Befehle:** `/start` · `/help` (Kurzanleitung), `/digest` (Tagesüberblick jetzt),
-`/review` (Wochenrückblick jetzt), `/reset` (Gespräch/Gedächtnis zurücksetzen).
+`/review` (Wochenrückblick jetzt), `/recently_learned` (was du zuletzt gelernt/festgehalten hast),
+`/reset` (Gespräch/Gedächtnis zurücksetzen).
 
 > **Proaktive Briefings abschalten:** Die automatischen Digests/Reviews lassen sich in der
 > `.env` explizit ausschalten — `DIGEST_ENABLED=false` bzw. `REVIEW_ENABLED=false`. Dann
@@ -209,8 +212,9 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
 - **Phase 4 (fertig):** Fakten-Anreicherung per Websuche (`enrich_item`), durchgehende
   „tippt…"-Anzeige bei langen Antworten.
 - **Release:** aktueller Stand als **v1.0.0** getaggt.
+- **Seit v1.0:** Lern-Rückblick (`/recently_learned`).
 - **Geplant (nach v1.0):** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
-  Lern-Review („Was habe ich gelernt?"), erledigte Todos im Dashboard ausblenden, wiederkehrende
-  Todos; optional: Beobachtbarkeit/Kosten-Logging und Dashboard-Login.
+  erledigte Todos im Dashboard ausblenden, wiederkehrende Todos; optional:
+  Beobachtbarkeit/Kosten-Logging und Dashboard-Login.
 
 Siehe den vollständigen Plan in [PLAN.md](PLAN.md).

@@ -232,6 +232,13 @@ Pfad ausgelöst; normale Abfragen verursachen keine Suchkosten.
 > dogfooded und dokumentiert. Ab jetzt: Fehlerbehebungen als Patch (1.0.x), neue Funktionen als
 > Minor (1.x.0), Breaking Changes als Major (2.0.0).
 
+### ✅ Seit v1.0 — umgesetzt
+
+- [x] **Lern-Rückblick** — On-Demand-Befehl `/recently_learned` fasst zusammen, was ich zuletzt
+      gelernt/festgehalten habe: neue Notizen/Ideen und erledigte Todos der letzten 7 Tage,
+      plus 1-3 kurze Erkenntnisse. Basiert auf dem neuen Tool `list_recent` (Einträge nach
+      Änderungszeit), das auch für normale Fragen („was habe ich diese Woche notiert?") nutzbar ist.
+
 ### 🔮 Phase 5 — Betrieb & Beobachtbarkeit (optional, nach v1.0)
 
 Kein Blocker für v1.0 (Einzelnutzer-Betrieb; Logging genügt), aber sinnvoller Ausbau — und ein
@@ -248,8 +255,6 @@ gutes Portfolio-Signal:
 - [ ] **Proaktive Vorschläge** — der Bot erkennt Muster in den Daten und schlägt von sich aus
       etwas vor, z.B. „Du hast 3 Ideen zum Thema RAG — soll ich sie zusammenfassen/bündeln?"
       (auf Basis von Häufung/Ähnlichkeit verwandter Einträge).
-- [ ] **Lern-Review** — Erweiterung des Wochenrückblicks um „Was habe ich diese Woche gelernt?"
-      (aus Notizen und erledigten Todos), als eigener Abschnitt.
 - [ ] **Erledigte Todos im Dashboard ausblenden** — Umschalter im Web, der `done`-Todos
       standardmäßig ausblendet und nur offene zeigt (bei Bedarf wieder einblendbar).
 - [ ] **Wiederkehrende Todos (recurring)** — Todos mit Wiederholung (täglich/wöchentlich/
