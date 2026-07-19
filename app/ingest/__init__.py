@@ -1,6 +1,7 @@
 """Ingestion pipeline: free text -> structured fields -> embedding -> stored item."""
 import logging
 
+from app.documents import extract_project_hashtag
 from app.duetime import parse_due
 from app.ingest.embed import embed_text, to_vector_literal
 from app.ingest.extract import extract_structure
@@ -34,8 +35,14 @@ def _confirmation(data: dict, project_name: str | None, due) -> str:
 
 async def capture(pool, anthropic, text: str, source: str, settings) -> str:
     """Extract, embed and store one captured message. Returns a confirmation string."""
-    raw = await extract_structure(anthropic, text, settings)
-    data: CaptureData = normalize_capture(raw, text)
+    # A #Projektname typed in the message assigns the project deterministically (same
+    # convention as file captions); it's stripped before extraction and overrides
+    # whatever project Claude might otherwise guess.
+    project_tag, body = extract_project_hashtag(text)
+    raw = await extract_structure(anthropic, body or text, settings)
+    data: CaptureData = normalize_capture(raw, body or text)
+    if project_tag:
+        data["project_hint"] = project_tag
 
     emb_lit = to_vector_literal(
         await embed_text(f"{data['title']}\n{data['content'] or ''}", settings.embedding_model)

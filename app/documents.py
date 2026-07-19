@@ -6,27 +6,37 @@ import asyncio
 import re
 from pathlib import Path
 
-# A #Projektname token in a caption selects/creates the project; \w is Unicode
-# in Python 3, so umlauts work (e.g. #Südtirol, #Urlaub-2026).
-_HASHTAG_RE = re.compile(r"#(\w[\w-]*)")
+# A #Projektname token selects/creates a project. It must be standalone (at the start
+# or after whitespace) so a URL fragment like ".../p#section" or "C#" is NOT treated as
+# a project; an optional space after # is allowed ("# Finanzen"). \w is Unicode in
+# Python 3, so umlauts work (e.g. #Südtirol, #Urlaub-2026).
+_HASHTAG_RE = re.compile(r"(?:^|\s)#[ \t]*(\w[\w-]*)")
+
+
+def extract_project_hashtag(text: str | None) -> tuple[str | None, str]:
+    """Pull the first standalone #Projektname (also '# Projektname') out of free text.
+
+    Returns (project_name or None, text with that hashtag token removed and whitespace
+    tidied). Shared by file captions and text capture so both use the same convention.
+    """
+    text = text or ""
+    m = _HASHTAG_RE.search(text)
+    if not m:
+        return None, text.strip()
+    cleaned = re.sub(r"\s+", " ", text[:m.start()] + " " + text[m.end():]).strip()
+    return m.group(1), cleaned
 
 
 def parse_caption(caption: str | None) -> tuple[str | None, str | None]:
     """Split a file caption into (project_name, note).
 
     The whole caption is the free-text note (location, event, ...). An optional
-    #Projektname anywhere in it picks the project; that hashtag token is removed
-    from the note. Returns (None, None) for an empty caption.
+    #Projektname in it picks the project; that hashtag token is removed from the note.
+    Returns (None, None) for an empty caption.
     """
-    text = (caption or "").strip()
-    if not text:
+    if not (caption or "").strip():
         return None, None
-    project = None
-    m = _HASHTAG_RE.search(text)
-    if m:
-        project = m.group(1)
-        text = text[:m.start()] + text[m.end():]   # drop the hashtag token from the note
-    note = re.sub(r"\s+", " ", text).strip()
+    project, note = extract_project_hashtag(caption)
     return project, (note or None)
 
 

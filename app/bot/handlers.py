@@ -24,6 +24,7 @@ WELCOME = (
     "👋 Hi! Ich bin dein Second Brain.\n\n"
     "Schick mir einfach Todos, Ideen oder Notizen — als Text oder 🎙️ Sprachnachricht — "
     "ich sortiere sie ein.\n"
+    "Mit #Projektname ordnest du direkt einem Projekt zu, z.B. „Geld überweisen #Finanzen“.\n"
     "Oder stell mir Fragen wie:\n"
     "• „Was soll ich heute zuerst machen?“\n"
     "• „Welche Ideen habe ich zum Thema X?“\n"
