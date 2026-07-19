@@ -21,7 +21,8 @@ WELCOME = (
     "Oder stell mir Fragen wie:\n"
     "• „Was soll ich heute zuerst machen?“\n"
     "• „Welche Ideen habe ich zum Thema X?“\n"
-    "• „Zeig mir offene Todos für Projekt Y.“"
+    "• „Zeig mir offene Todos für Projekt Y.“\n\n"
+    "Ich behalte den Gesprächskontext für Rückfragen. Mit /reset fange ich neu an."
 )
 
 
@@ -44,18 +45,29 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(WELCOME)
 
 
+async def reset_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data["settings"]
+    if not _is_allowed(update.effective_user.id, settings):
+        await update.message.reply_text("⛔ Nicht berechtigt.")
+        return
+    context.bot_data["memory"].clear(update.effective_chat.id)
+    await update.message.reply_text("🧹 Gespräch zurückgesetzt — ich starte ohne vorherigen Kontext.")
+
+
 async def _handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE,
                        text: str, source: str) -> None:
     """Route one piece of text through classify -> capture/query and reply."""
     settings = context.bot_data["settings"]
     anthropic = context.bot_data["anthropic"]
     pool = context.bot_data["pool"]
+    memory = context.bot_data["memory"]
+    chat_id = update.effective_chat.id
     try:
-        await context.bot.send_chat_action(chat_id=update.effective_chat.id,
-                                            action=ChatAction.TYPING)
+        await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
         intent = await classify(anthropic, text, settings)
         if intent == "query":
-            reply = await answer(anthropic, pool, text, settings)
+            reply = await answer(anthropic, pool, text, settings, history=memory.get(chat_id))
+            memory.add(chat_id, text, reply)          # remember this turn for follow-ups
         else:
             reply = await capture(pool, anthropic, text, source, settings)
     except Exception:

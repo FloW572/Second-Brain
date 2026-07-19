@@ -33,8 +33,9 @@ SYSTEM = (
 )
 
 
-async def answer(anthropic, pool, question: str, settings) -> str:
-    messages = [{"role": "user", "content": question}]
+async def answer(anthropic, pool, question: str, settings, history=None) -> str:
+    messages = list(history or [])          # prior conversation turns, if any
+    messages.append({"role": "user", "content": question})
 
     for _ in range(MAX_TURNS):
         resp = await anthropic.messages.create(

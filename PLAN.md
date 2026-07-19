@@ -142,9 +142,9 @@ Neu-Einbetten aller Items.
 
 ### 🔮 Phase 3 — Proaktiv & Oberfläche
 
-- [ ] **Konversations-Gedächtnis** — der Query-Agent merkt sich die letzten Austausche
-      pro Chat, sodass Folgefragen (z.B. „und diese Woche?") den Kontext behalten.
-      Aktuell startet `answer()` bei jeder Nachricht ohne Verlauf.
+- [x] **Konversations-Gedächtnis** — der Query-Agent kennt die letzten Austausche pro Chat
+      (`app/memory.py`, in-memory, begrenzt + Inaktivitäts-Reset), sodass Folgefragen
+      (z.B. „und diese Woche?") den Kontext behalten; `/reset` startet neu.
 - [ ] **Täglicher Digest** — morgendliche Zusammenfassung/Priorisierung
 - [ ] **Wöchentliches Review** — offene Punkte, liegen gebliebene Ideen
 - [ ] **Web-Dashboard** — Items browsen, editieren, filtern
