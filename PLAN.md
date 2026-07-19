@@ -127,7 +127,8 @@ Neu-Einbetten aller Items.
 
 - [ ] **Sprachnachrichten** — Transkription via `faster-whisper`
       (Handler existiert bereits als Platzhalter in `app/bot/handlers.py`)
-- [ ] **`update_item`-Tool** — Titel/Fälligkeit/Priorität/Projekt ändern
+- [x] **`update_item`-Tool** — Titel/Inhalt/Fälligkeit/Priorität/Status/Projekt/Tags ändern
+      (partielles Update, re-embedded bei Text-Änderung)
 - [ ] **Erinnerungen** — proaktive Benachrichtigung zu fälligen Todos
 - [ ] Mehr Tools: `delete_item`, `create_project`, `reschedule`
 
