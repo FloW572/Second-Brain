@@ -1,23 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
+{% if project_name %}
+  <h1 class="page-head">📁 {{ project_name }} <a href="/projects">← Projekte</a></h1>
+{% elif q %}
+  <h1 class="page-head">🔍 „{{ q }}“</h1>
+{% else %}
+  <h1 class="page-head">{% if active_type %}{{ active_type|capitalize }}{% else %}🗂 Alle Einträge{% endif %}</h1>
+{% endif %}
+
 <form class="search" method="get" action="/">
   <input type="search" name="q" placeholder="Semantische Suche…" value="{{ q }}">
   <button type="submit">🔍</button>
   {% if q %}<a class="clear" href="/">✕</a>{% endif %}
 </form>
-
-{% if project_name %}
-<div class="context">📁 {{ project_name }} <a href="/projects">← Projekte</a></div>
-{% elif not q %}
-<nav class="tabs">
-  <a href="/" class="{{ 'active' if not active_type else '' }}">Alle</a>
-  {% for t, emoji in type_emoji.items() %}
-    <a href="/?type={{ t }}" class="{{ 'active' if active_type == t else '' }}">{{ emoji }} {{ t }}</a>
-  {% endfor %}
-  <a href="/projects">📁 Projekte</a>
-  <a href="/documents">📎 Dateien</a>
-</nav>
-{% endif %}
 
 {% if project_name %}
 <section class="docs">
@@ -52,33 +47,34 @@
 </section>
 {% endif %}
 
-{% if not items %}
-  <p class="empty">Keine Einträge{% if q %} für „{{ q }}"{% endif %}.</p>
-{% endif %}
-
-{% for item in items %}
-<article class="card {{ 'done' if item.status == 'done' else '' }}">
-  <div class="card-main">
-    <div class="title">{{ item.emoji }} <span class="id">#{{ item.id }}</span> {{ item.title }}</div>
-    {% if item.content %}<div class="content">{{ item.content }}</div>{% endif %}
-    <div class="meta">
-      {% if item.status %}<span class="badge status-{{ item.status }}">{{ item.status }}</span>{% endif %}
-      {% if item.priority_label %}<span class="badge">❗ {{ item.priority_label }}</span>{% endif %}
-      {% if item.due_display %}<span class="badge due">📅 {{ item.due_display }}</span>{% endif %}
-      {% if item.project %}<span class="badge">📁 {{ item.project }}</span>{% endif %}
-      {% for tag in item.tags %}<span class="tag">#{{ tag }}</span>{% endfor %}
+<div class="cards">
+  {% if not items %}
+  <p class="empty">Keine Einträge{% if q %} für „{{ q }}“{% endif %}.</p>
+  {% endif %}
+  {% for item in items %}
+  <article class="card type-{{ item.type }} {{ 'done' if item.status == 'done' else '' }}">
+    <div class="card-main">
+      <div class="title">{{ item.emoji }} <span class="id">#{{ item.id }}</span> {{ item.title }}</div>
+      {% if item.content %}<div class="content">{{ item.content }}</div>{% endif %}
+      <div class="meta">
+        {% if item.status %}<span class="badge status-{{ item.status }}">{{ item.status }}</span>{% endif %}
+        {% if item.priority_label %}<span class="badge">❗ {{ item.priority_label }}</span>{% endif %}
+        {% if item.due_display %}<span class="badge due">📅 {{ item.due_display }}</span>{% endif %}
+        {% if item.project %}<span class="badge">📁 {{ item.project }}</span>{% endif %}
+        {% for tag in item.tags %}<span class="tag">#{{ tag }}</span>{% endfor %}
+      </div>
     </div>
-  </div>
-  <div class="actions">
-    {% if item.type == 'todo' and item.status != 'done' %}
-    <form method="post" action="/complete/{{ item.id }}"><button class="btn ok">✓</button></form>
-    {% endif %}
-    <a class="btn" href="/edit/{{ item.id }}">✎</a>
-    <form method="post" action="/delete/{{ item.id }}"
-          onsubmit="return confirm('Eintrag #{{ item.id }} löschen?')">
-      <button class="btn danger">🗑</button>
-    </form>
-  </div>
-</article>
-{% endfor %}
+    <div class="actions">
+      {% if item.type == 'todo' and item.status != 'done' %}
+      <form method="post" action="/complete/{{ item.id }}"><button class="btn ok">✓</button></form>
+      {% endif %}
+      <a class="btn" href="/edit/{{ item.id }}">✎</a>
+      <form method="post" action="/delete/{{ item.id }}"
+            onsubmit="return confirm('Eintrag #{{ item.id }} löschen?')">
+        <button class="btn danger">🗑</button>
+      </form>
+    </div>
+  </article>
+  {% endfor %}
+</div>
 {% endblock %}

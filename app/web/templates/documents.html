@@ -1,11 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Dateien · Second Brain{% endblock %}
 {% block content %}
-<nav class="tabs">
-  <a href="/">Alle</a>
-  <a href="/projects">📁 Projekte</a>
-  <a href="/documents" class="active">📎 Dateien</a>
-</nav>
+<h1 class="page-head">📎 Dateien</h1>
 
 {% if not documents %}
   <p class="empty">Noch keine Dateien.</p>

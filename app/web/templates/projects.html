@@ -1,12 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Projekte · Second Brain{% endblock %}
 {% block content %}
-<nav class="tabs">
-  <a href="/">Alle</a>
-  <a href="/projects" class="active">📁 Projekte</a>
-  <a href="/documents">📎 Dateien</a>
-</nav>
+<h1 class="page-head">📁 Projekte</h1>
 
+<div class="cards">
 {% if not projects and not no_project %}
   <p class="empty">Noch keine Projekte.</p>
 {% endif %}
@@ -45,4 +42,5 @@
   </div>
 </a>
 {% endif %}
+</div>
 {% endblock %}
