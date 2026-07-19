@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # Locale
     timezone: str = "Europe/Vienna"
 
+    # Daily digest: local hour (0-23) to send the morning summary; outside 0-23 = off
+    digest_hour: int = 8
+
     @property
     def allowed_user_ids(self) -> set[int]:
         return {int(x.strip()) for x in self.allowed_telegram_user_ids.split(",") if x.strip()}

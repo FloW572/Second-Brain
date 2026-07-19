@@ -8,6 +8,7 @@ from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
 from app.bot.router import classify
+from app.digest import send_digest
 from app.ingest import capture
 from app.query.agent import answer
 from app.transcribe import transcribe_file
@@ -22,7 +23,8 @@ WELCOME = (
     "• „Was soll ich heute zuerst machen?“\n"
     "• „Welche Ideen habe ich zum Thema X?“\n"
     "• „Zeig mir offene Todos für Projekt Y.“\n\n"
-    "Ich behalte den Gesprächskontext für Rückfragen. Mit /reset fange ich neu an."
+    "Ich behalte den Gesprächskontext für Rückfragen. /digest zeigt deinen Tagesüberblick, "
+    "/reset startet ein neues Gespräch."
 )
 
 
@@ -52,6 +54,18 @@ async def reset_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     context.bot_data["memory"].clear(update.effective_chat.id)
     await update.message.reply_text("🧹 Gespräch zurückgesetzt — ich starte ohne vorherigen Kontext.")
+
+
+async def digest_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data["settings"]
+    if not _is_allowed(update.effective_user.id, settings):
+        await update.message.reply_text("⛔ Nicht berechtigt.")
+        return
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
+    sent = await send_digest(context.bot, context.bot_data["pool"],
+                             context.bot_data["anthropic"], settings)
+    if not sent:
+        await update.message.reply_text("⚠️ Konnte den Digest nicht erstellen.")
 
 
 async def _handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE,
