@@ -147,9 +147,11 @@ angewandt, z.B.:
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/002_add_reminders.sql
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/003_documents.sql
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/004_document_notes.sql
+docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/005_usage_log.sql
 ```
 `002` hebt `due_date` → `due_at` (mit Uhrzeit) an und ergänzt `reminded_at`; `003` legt die
-`documents`-Tabelle an; `004` ergänzt die Kommentar-Spalte `note` an Dokumenten.
+`documents`-Tabelle an; `004` ergänzt die Kommentar-Spalte `note` an Dokumenten; `005` legt die
+`usage_log`-Tabelle für die Kosten-Beobachtbarkeit an.
 
 ## Tests
 ```bash
@@ -167,12 +169,16 @@ Zusätzlich zu den Unit-Tests gibt es einen **Eval-Harness** ([`evals/`](evals/)
 docker compose exec app python -m evals.run all      # router · extract · retrieval · answer
 ```
 
-| Eval | misst | Kennzahl |
-|---|---|---|
-| `router` | capture-vs-query-Klassifikation | Accuracy |
-| `extract` | Feld-Extraktion (Typ/Fälligkeit/Priorität/Projekt) | Accuracy je Feld |
-| `retrieval` | hybride Suche auf geseedetem Korpus (lokal, keine API-Kosten) | hit@3, recall@5, MRR |
-| `answer` | End-to-End-Antwort, bewertet per **LLM-as-Judge** | Bestanden-Quote |
+| Eval | misst | Kennzahl | Letzte Messung¹ |
+|---|---|---|---|
+| `router` | capture-vs-query-Klassifikation | Accuracy | **100 %** (24/24) |
+| `extract` | Feld-Extraktion (Typ/Fälligkeit/Priorität/Projekt) | Accuracy je Feld | **Ø 97,5 %** (Typ 90 %, Rest je 100 %) |
+| `retrieval` | hybride Suche auf geseedetem Korpus (lokal, keine API-Kosten) | hit@3 / recall@5 / MRR | **100 % / 93,8 % / 0,938** |
+| `answer` | End-to-End-Antwort, bewertet per **LLM-as-Judge** | Bestanden-Quote | **100 %** (4/4) |
+
+¹ Auf den mitgelieferten Datensätzen im App-Container gemessen (Routing/Extraktion = Haiku,
+Reasoning/Judging = Opus). Die Datensätze sind bewusst klein — als Trend-/Regressions-Signal
+lesen, nicht als Benchmark.
 
 Details und Hinweise: [`evals/README.md`](evals/README.md).
 
@@ -235,10 +241,12 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
   Web-Dashboard, Dokumente je Projekt; zurückgestellt: Kalender-Integration.
 - **Phase 4 (fertig):** Fakten-Anreicherung per Websuche (`enrich_item`), durchgehende
   „tippt…"-Anzeige bei langen Antworten.
-- **Release:** aktueller Stand als **v1.0.0** getaggt.
-- **Seit v1.0:** Lern-Rückblick (`/recently_learned`).
-- **Geplant (nach v1.0):** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
-  erledigte Todos im Dashboard ausblenden, wiederkehrende Todos; optional:
-  Beobachtbarkeit/Kosten-Logging und Dashboard-Login.
+- **Seit v1.0:** Lern-Rückblick (`/recently_learned`), Datei-Kommentare, Projekt-Umbenennen/-Löschen
+  (Bot + Dashboard), Kosten-/Nutzungs-Observability (`/stats`, in der DB persistiert) und ein
+  **Eval-Harness** (Router/Extraktion/Retrieval/Antwort).
+- **Release:** aktueller Stand als **v1.1.0** getaggt (Minor über v1.0.0).
+- **Geplant (nach v1.1):** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
+  erledigte Todos im Dashboard ausblenden, wiederkehrende Todos; optional: Dashboard-Login und ein
+  Metrik-Backend/Tracing.
 
 Siehe den vollständigen Plan in [PLAN.md](PLAN.md).
