@@ -3,6 +3,7 @@ import json
 import logging
 
 from app.query.tools import TOOLS, run_tool
+from app.usage import create_message
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,9 @@ async def answer(anthropic, pool, question: str, settings, history=None) -> str:
     messages.append({"role": "user", "content": question})
 
     for _ in range(MAX_TURNS):
-        resp = await anthropic.messages.create(
+        resp = await create_message(
+            anthropic,
+            label="query",
             model=settings.query_model,
             max_tokens=1500,
             system=SYSTEM,

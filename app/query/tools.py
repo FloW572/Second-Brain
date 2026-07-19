@@ -9,6 +9,7 @@ from app.ingest.embed import embed_text, to_vector_literal
 from app.ingest.projects import resolve_project
 from app.models import ITEM_TYPES
 from app.search import hybrid_search
+from app.usage import create_message
 
 logger = logging.getLogger(__name__)
 
@@ -558,7 +559,9 @@ async def _research_facts(anthropic, settings, item: dict, focus: str | None) ->
     messages = [{"role": "user", "content": "\n".join(lines)}]
     text = ""
     for _ in range(_MAX_RESEARCH_TURNS):
-        resp = await anthropic.messages.create(
+        resp = await create_message(
+            anthropic,
+            label="research",
             model=settings.query_model,
             max_tokens=1024,
             system=RESEARCH_SYSTEM,

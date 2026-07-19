@@ -1,0 +1,34 @@
+{
+  "corpus": [
+    {"key": "quellenhof", "type": "reference", "title": "Hotel Quellenhof Südtirol",
+     "content": "Wellnesshotel in Meran mit schönem Spa, für den Jahrestag vorgemerkt"},
+    {"key": "rag_idea", "type": "idea", "title": "RAG-System für Notizen",
+     "content": "Retrieval-augmented generation, um in eigenen Notizen semantisch zu suchen"},
+    {"key": "steuer", "type": "todo", "title": "Steuererklärung abgeben",
+     "content": "Belege sammeln und beim Finanzamt einreichen"},
+    {"key": "wlan", "type": "note", "title": "WLAN-Passwort zuhause",
+     "content": "Das Passwort für das Heimnetzwerk lautet sonnenblume42"},
+    {"key": "thinking_book", "type": "reference", "title": "Buch: Thinking, Fast and Slow",
+     "content": "Daniel Kahneman über kognitive Verzerrungen und Entscheidungen"},
+    {"key": "website_meeting", "type": "todo", "title": "Meeting Website-Relaunch",
+     "content": "Besprechung mit Anna zum neuen Design der Firmenwebsite"},
+    {"key": "kochrezept_app", "type": "idea", "title": "App erkennt Rezepte aus Fotos",
+     "content": "Foto von einem Gericht machen und automatisch das Rezept vorschlagen"},
+    {"key": "zahnarzt", "type": "todo", "title": "Zahnarzttermin",
+     "content": "Kontrolluntersuchung beim Zahnarzt, morgens"},
+    {"key": "vektor_db", "type": "note", "title": "Vergleich Vektordatenbanken",
+     "content": "pgvector vs. Qdrant vs. Weaviate: Latenz, Kosten und Betrieb"},
+    {"key": "geschenk", "type": "todo", "title": "Geschenk für Papa",
+     "content": "Idee: Weinprobe oder ein gutes Buch"}
+  ],
+  "queries": [
+    {"query": "Wo wollte ich den Jahrestag verbringen?", "relevant": ["quellenhof"]},
+    {"query": "Was war das WLAN-Passwort?", "relevant": ["wlan"]},
+    {"query": "Ideen rund um KI und semantische Suche", "relevant": ["rag_idea", "vektor_db"]},
+    {"query": "Welches Buch wollte ich lesen?", "relevant": ["thinking_book"]},
+    {"query": "Aufgaben rund um Steuern", "relevant": ["steuer"]},
+    {"query": "Termine beim Arzt", "relevant": ["zahnarzt"]},
+    {"query": "Was muss ich für die Firmenwebsite tun?", "relevant": ["website_meeting"]},
+    {"query": "App-Idee mit Fotos", "relevant": ["kochrezept_app"]}
+  ]
+}

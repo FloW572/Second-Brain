@@ -87,8 +87,10 @@ Handy ──Telegram──▶ Bot (Long-Polling)        Browser ──HTTP :8001
 | Zeit      | `app/duetime.py`                     | Fälligkeiten parsen (Datum → 09:00 lokal), Zeitzone `TIMEZONE` |
 | Proaktiv  | `app/reminders.py`, `app/digest.py`  | Erinnerungs-Loop, täglicher Digest & wöchentliches Review |
 | Dokumente | `app/documents.py`                   | Datei-Anhänge je Projekt (Bytes im Volume, Metadaten in DB) |
+| Beobachtbarkeit | `app/usage.py`                  | Wrapper um Anthropic-Aufrufe: Tokens/Latenz/Kosten loggen + in `usage_log` persistieren, `/stats`, Warnschwelle |
 | Dashboard | `app/web/main.py`, `app/web/templates/` | FastAPI-Weboberfläche (browsen, suchen, bearbeiten, Dokumente) |
-| Daten     | `migrations/001_init.sql`, `002_add_reminders.sql`, `003_documents.sql`, `004_document_notes.sql`, `app/db.py`, `app/models.py` | Schema + Migrationen, Connection-Pool, Typen |
+| Evals     | `evals/` (`metrics.py`, `*_eval.py`, `run.py`, `datasets/`) | Qualitäts-Messung: Router/Extraktion/Retrieval/Antwort (LLM-Judge) |
+| Daten     | `migrations/001_init.sql` … `005_usage_log.sql`, `app/db.py`, `app/models.py` | Schema + Migrationen, Connection-Pool, Typen |
 
 ### Datenfluss & Datenschutz
 
@@ -131,13 +133,19 @@ Definiert in [`migrations/001_init.sql`](migrations/001_init.sql).
 (freier Kommentar), `created_at`. Die Datei-**Bytes** liegen im Volume `docdata` (`DOCS_DIR/<id>`),
 nur die **Metadaten** in der DB.
 
+**`usage_log`** (Migration 005) — eine Zeile je Anthropic-Aufruf für die Kosten-Beobachtbarkeit:
+`id`, `label` (router/extract/query/research), `model`, Token-Zähler (`input_tokens`,
+`cache_creation_tokens`, `cache_read_tokens`, `output_tokens`), `web_searches`, `cost_usd`
+(**Schätzung**, siehe `app/usage.py`), `created_at`. `/stats` aggregiert daraus heute/diesen Monat.
+
 **Indizes:** HNSW auf `embedding` (Cosine), GIN auf `fts`, B-Tree auf `due_at`,
 `project_id`, `(type, status)` sowie `documents(project_id)`. Trigger halten `updated_at` aktuell.
 
 > **Migrationen:** `002_add_reminders.sql` hob `due_date DATE` → `due_at TIMESTAMPTZ` an und
 > ergänzte `reminded_at`; `003_documents.sql` legte die `documents`-Tabelle an;
-> `004_document_notes.sql` ergänzte die Kommentar-Spalte `note`. Alle idempotent;
-> Neuinstallationen erhalten die Endform bereits aus `001_init.sql`.
+> `004_document_notes.sql` ergänzte die Kommentar-Spalte `note`; `005_usage_log.sql` legte die
+> `usage_log`-Tabelle an. Alle idempotent; Neuinstallationen erhalten die Endform bereits aus
+> `001_init.sql`.
 
 ---
 
@@ -250,15 +258,25 @@ Pfad ausgelöst; normale Abfragen verursachen keine Suchkosten.
       auf einen Teilnamen (z.B. „Bier Gut" → „Bier") still zum No-Op machte. Verfügbar im Bot **und**
       im Dashboard (Umbenennen-Feld bzw. Löschen-Button je Projektkarte; Löschen nur bei leeren Projekten).
 
-### 🔮 Phase 5 — Betrieb & Beobachtbarkeit (optional, nach v1.0)
+### 🟡 Phase 5 — Betrieb & Beobachtbarkeit (teilweise umgesetzt; Umfang bewusst auf Einzelbetrieb zugeschnitten)
 
-Kein Blocker für v1.0 (Einzelnutzer-Betrieb; Logging genügt), aber sinnvoller Ausbau 
+Kein Blocker für v1.0. Umgesetzt wurde, was im Einzelnutzer-Betrieb echten Nutzen bringt;
+Multi-User-/Betriebs-Themen bleiben bewusst zurückgestellt.
 
-- [ ] **Beobachtbarkeit** — strukturierte Logs, einfache Metriken (Anzahl Anfragen, Latenz) und
-      Token-/Kosten-Logging pro Anthropic-Aufruf; optional leichtes Tracing.
-- [ ] **Dashboard-Absicherung** — Login bzw. Reverse-Proxy, falls das Dashboard über localhost
-      hinaus erreichbar sein soll (aktuell bewusst ohne Auth, nur für lokal/vertrauenswürdiges Netz).
-- [ ] **Kosten-/Budget-Grenzen** — optionales Limit/Warnschwelle für Anthropic-Ausgaben.
+- [x] **Beobachtbarkeit (Kosten/Nutzung)** — ein dünner Wrapper (`app/usage.py`) um alle
+      Anthropic-Aufrufe (Router, Extraktion, Query, Recherche) loggt pro Aufruf Tokens, Latenz und
+      **geschätzte Kosten** (Preise je Modell inkl. Cache-Tarifen) und zählt Fehler/Rate-Limits.
+      Jeder Aufruf wird zusätzlich in die Tabelle `usage_log` **persistiert** (Migration 005), sodass
+      `/stats` Summen **heute und diesen Monat** je Modell zeigt — auch über Neustarts hinweg.
+- [x] **Kosten-Warnschwelle** — `COST_WARN_THRESHOLD_USD` (Default 0 = aus): bei Überschreiten der
+      geschätzten Ausgaben seit Start wird **einmalig** eine Log-Warnung ausgegeben. Bewusst **keine
+      harte Sperre** — die würde einen aus dem eigenen Bot aussperren.
+- [ ] **Dashboard-Absicherung** (zurückgestellt) — Login/Reverse-Proxy nur relevant, falls das
+      Dashboard über localhost hinaus erreichbar sein soll. Im Einzelbetrieb auf vertrauenswürdigem
+      Netz nicht nötig (der Bot ist ohnehin deny-by-default); wird erst bei Bedarf umgesetzt.
+- [ ] **Metrik-Backend/Tracing** (zurückgestellt) — Prometheus o.ä. oder verteiltes Tracing wären
+      für einen Ein-Personen-Bot überdimensioniert; die Log-Zeilen + `usage_log` + `/stats` decken den
+      Bedarf. Leicht nachrüstbar, falls später gewünscht.
 
 ### 🔮 Phase 6 — Geplante Funktionen (nach v1.0)
 
@@ -272,6 +290,25 @@ Kein Blocker für v1.0 (Einzelnutzer-Betrieb; Logging genügt), aber sinnvoller 
 
 > Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
 > den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
+
+### ✅ Phase 7 — Evaluation-Harness (umgesetzt)
+
+Getrennt von den Unit-Tests (deterministische Logik) misst ein **Eval-Harness** (`evals/`) die
+**Qualität der modellabhängigen Schritte** auf kleinen gelabelten Datensätzen und gibt eine
+Scorecard aus (`python -m evals.run <name>|all`, am besten im App-Container). Gedacht zum
+Beobachten einer Kennzahl über die Zeit — etwa um Prompt-Regressionen zu erkennen.
+
+- [x] **Router-Eval** — capture-vs-query-Klassifikation, misst Accuracy (Haiku).
+- [x] **Extraktions-Eval** — prüft die strukturierten Felder (Typ, Fälligkeit ja/nein, Priorität,
+      Projekt) gegen gelabelte Fälle; Accuracy je Feld (Haiku).
+- [x] **Retrieval-/RAG-Eval** — seedet ein bekanntes Korpus, misst `hybrid_search` mit
+      **hit@3 / recall@5 / MRR**. Nutzt nur das lokale Embedding-Modell → **keine API-Kosten**.
+- [x] **Antwort-Eval (LLM-as-Judge)** — End-to-End-Antwort des Query-Agenten, von einem
+      Richter-Modell gegen eine Rubrik bewertet; Bestanden-Quote (Opus).
+- [x] Reine Metriken (`evals/metrics.py`: accuracy, hit@k, recall@k, MRR) sind unit-getestet.
+
+Hinweis: `retrieval`/`answer` seeden in die echte `items`-Tabelle (Marker `source='eval'`,
+danach gelöscht); für saubere Zahlen gegen eine kleine/leere DB laufen lassen.
 
 ---
 
@@ -295,7 +332,10 @@ Kein Blocker für v1.0 (Einzelnutzer-Betrieb; Logging genügt), aber sinnvoller 
 - **Tests:** `pytest` — deckt reine Logik ohne DB/API ab
   (`tests/test_normalize.py`, `test_search.py`, `test_embed.py`, `test_duetime.py`,
   `test_memory.py`, `test_digest.py`, `test_caption.py`); `test_project_tools.py` testet
-  die Projekt-Tools (umbenennen/löschen) gegen eine kleine In-Memory-Fake-DB.
+  die Projekt-Tools (umbenennen/löschen) gegen eine kleine In-Memory-Fake-DB;
+  `test_usage.py` Kostenschätzung/Tracker, `test_eval_metrics.py` die Eval-Metriken.
+- **Evals:** `python -m evals.run all` misst die Modell-Qualität (Router/Extraktion/Retrieval/
+  Antwort) — braucht DB + API, daher im Container. Siehe `evals/README.md`.
 - **Start:** `docker compose up -d --build`, danach Logs bis
   „Second Brain ist bereit. 🧠".
 - **DB inspizieren:** siehe [README](README.md#datenbank-inspizieren).

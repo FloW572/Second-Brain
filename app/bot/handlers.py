@@ -16,6 +16,7 @@ from app.ingest import capture
 from app.ingest.projects import resolve_project
 from app.query.agent import answer
 from app.transcribe import transcribe_file
+from app.usage import usage_report
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ WELCOME = (
     "• „Zeig mir offene Todos für Projekt Y.“\n\n"
     "Ich behalte den Gesprächskontext für Rückfragen. /digest = Tagesüberblick, "
     "/review = Wochenrückblick, /recently_learned = was du zuletzt gelernt hast, "
-    "/reset = neues Gespräch."
+    "/stats = Nutzung & Kosten, /reset = neues Gespräch."
 )
 
 
@@ -108,6 +109,15 @@ async def review_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
                              context.bot_data["anthropic"], settings)
     if not sent:
         await update.message.reply_text("⚠️ Konnte das Review nicht erstellen.")
+
+
+async def stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data["settings"]
+    if not _is_allowed(update.effective_user.id, settings):
+        await update.message.reply_text("⛔ Nicht berechtigt.")
+        return
+    lines = await usage_report(context.bot_data["pool"], settings.timezone)
+    await update.message.reply_text("\n".join(lines))
 
 
 async def learned_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

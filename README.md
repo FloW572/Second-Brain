@@ -49,6 +49,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | **Lern-Rückblick** | `/recently_learned` — fasst zusammen, was du zuletzt gelernt/festgehalten hast (neue Notizen/Ideen + erledigte Todos der letzten 7 Tage) |
 | **Dokumente** | Dateien (xlsx/PDF/Bilder) je Projekt — per Telegram **und** Dashboard; mit freiem **Kommentar** je Datei (Bildunterschrift; `#Projekt` ordnet zu). Bytes im Volume, Metadaten in der DB |
 | **Web-Dashboard** | FastAPI-Oberfläche zum Browsen, Suchen, Bearbeiten und Verwalten der Dokumente (Port 8001) |
+| **Kosten & Nutzung** | pro Anthropic-Aufruf werden Tokens, Latenz und geschätzte Kosten geloggt **und in der DB persistiert**; `/stats` zeigt Summen **heute/diesen Monat** je Modell + Fehler-/Rate-Limit-Zähler; optionale Warnschwelle (`COST_WARN_THRESHOLD_USD`) |
 
 ### Agent-Tools
 
@@ -103,7 +104,7 @@ Schreib **oder sprich** deinem Bot in Telegram:
 
 **Befehle:** `/start` · `/help` (Kurzanleitung), `/digest` (Tagesüberblick jetzt),
 `/review` (Wochenrückblick jetzt), `/recently_learned` (was du zuletzt gelernt/festgehalten hast),
-`/reset` (Gespräch/Gedächtnis zurücksetzen).
+`/stats` (Nutzung & geschätzte Kosten: heute/diesen Monat), `/reset` (Gespräch/Gedächtnis zurücksetzen).
 
 > **Proaktive Briefings abschalten:** Die automatischen Digests/Reviews lassen sich in der
 > `.env` explizit ausschalten — `DIGEST_ENABLED=false` bzw. `REVIEW_ENABLED=false`. Dann
@@ -155,8 +156,25 @@ docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/004_do
 pip install -r requirements.txt pytest
 pytest
 ```
-Die Unit-Tests decken reine Logik ab (Normalisierung, RRF-Fusion, Vektor-Literal, Zeit-Parsing);
-sie brauchen weder DB noch API.
+Die Unit-Tests decken reine Logik ab (Normalisierung, RRF-Fusion, Vektor-Literal, Zeit-Parsing,
+Kostenschätzung, Eval-Metriken); sie brauchen weder DB noch API.
+
+## Evals
+Zusätzlich zu den Unit-Tests gibt es einen **Eval-Harness** ([`evals/`](evals/)), der die
+**Qualität der modellabhängigen Schritte** auf kleinen gelabelten Datensätzen misst (Scorecard):
+
+```bash
+docker compose exec app python -m evals.run all      # router · extract · retrieval · answer
+```
+
+| Eval | misst | Kennzahl |
+|---|---|---|
+| `router` | capture-vs-query-Klassifikation | Accuracy |
+| `extract` | Feld-Extraktion (Typ/Fälligkeit/Priorität/Projekt) | Accuracy je Feld |
+| `retrieval` | hybride Suche auf geseedetem Korpus (lokal, keine API-Kosten) | hit@3, recall@5, MRR |
+| `answer` | End-to-End-Antwort, bewertet per **LLM-as-Judge** | Bestanden-Quote |
+
+Details und Hinweise: [`evals/README.md`](evals/README.md).
 
 ## Modell-Hinweise
 - **Embeddings** laufen **lokal** (kostenlos, deutschtauglich). Wechselst du `EMBEDDING_MODEL`,
