@@ -29,8 +29,11 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "status": {"type": "string", "enum": ["open", "doing", "done", "all"],
-                           "description": "Default: active todos (open + doing). Give a specific "
-                                          "status to filter, or 'all' for every status."},
+                           "description": "OMIT this for the user's general 'offene/anstehende "
+                                          "Todos' — the default already returns active todos "
+                                          "(open + doing). Set 'open' ONLY when the user explicitly "
+                                          "distinguishes not-started from in-progress; 'done' for "
+                                          "completed; 'all' for every status."},
                 "due_before": {"type": "string",
                                "description": "ISO date/datetime; only todos due on/before."},
                 "project": {"type": "string", "description": "Filter by project name (partial)."},
