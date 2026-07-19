@@ -22,7 +22,14 @@ SYSTEM = (
     "(z.B. Erinnerungen), die es noch nicht gibt.\n"
     "- Bei Änderungen oder Löschungen: Wenn mehrere Einträge passen, frage nach, welcher "
     "gemeint ist (nenne die betroffenen ids), statt zu raten. Lösche nie ungefragt das Falsche.\n"
-    "- Antworte auf Deutsch, knapp und konkret. Nutze kurze Listen statt langer Absätze."
+    "- Antworte auf Deutsch, knapp und konkret.\n"
+    "- Formatiere für Telegram als REINEN Text — KEIN Markdown (kein **, kein #, keine "
+    "-Aufzählungszeichen); das wird in Telegram nicht gerendert und sieht unschön aus.\n"
+    "- Bei Listen: ein Eintrag pro Block, getrennt durch eine Leerzeile. "
+    "Kopfzeile im Format 'EMOJI #id Titel' (Emoji je Typ: ✅ todo, 💡 idee, 📝 notiz, 🔗 referenz). "
+    "Darunter — nur wenn vorhanden und nicht mit dem Titel redundant — eine eingerückte Detailzeile, "
+    "kompakt mit ' · ' getrennt, z.B. '📅 2026-07-25 · Prio: hoch · 📁 Finanzen · 🏷️ steuer'. "
+    "Lass leere Felder weg und wiederhole den Titel nicht im Detail."
 )
 
 
