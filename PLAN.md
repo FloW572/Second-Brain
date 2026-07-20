@@ -149,11 +149,13 @@ Neu-Einbetten aller Items.
 
 ## 6. Offene Punkte / Bekannte Grenzen
 
-- **Migrationen:** `001_init.sql` läuft nur beim ersten Init eines leeren
-  Daten-Volumes. Es gibt noch kein Migrations-Framework für Schemaänderungen.
+- **Migrationen:** Nummerierte, idempotente SQL-Dateien in `migrations/` werden beim
+  ersten Init automatisch in Reihenfolge ausgeführt. Ein volles Framework mit
+  Versions-Tracking (Alembic/Flyway) fehlt aber — auf eine bestehende DB wendet man
+  neue Migrationen von Hand an.
 - **Mehrbenutzer:** Aktuell auf eine kleine Whitelist ausgelegt; keine Trennung
-  der Daten pro Nutzer.
-- **Voice:** Nur Platzhalter (siehe Phase 2).
+  der Daten pro Nutzer. Zwei parallele Instanzen sind nicht möglich (ein Poller pro
+  Bot-Token; der Reminder-Loop ist auf eine Instanz ausgelegt).
 - **Kosten/Rate-Limits:** Kein Caching der Anthropic-Antworten; keine
   Budget-Grenzen implementiert.
 - **Beobachtbarkeit:** Nur Logging, keine Metriken/Tracing.
