@@ -14,7 +14,7 @@ class CaptureData(TypedDict, total=False):
     project_hint: str | None
     status: str | None
     priority: int | None
-    due_date: str | None   # ISO date
+    due_at: str | None     # ISO date (YYYY-MM-DD) or datetime (YYYY-MM-DDTHH:MM)
     tags: list[str]
 
 

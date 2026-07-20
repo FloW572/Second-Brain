@@ -59,7 +59,7 @@ async def hybrid_search(pool, settings, query: str, types: list[str] | None = No
             await cur.execute(
                 """
                 SELECT i.id, i.type, i.title, i.content, i.status, i.priority,
-                       i.due_date, i.tags, p.name
+                       i.due_at, i.tags, p.name
                 FROM items i LEFT JOIN projects p ON p.id = i.project_id
                 WHERE i.id = ANY(%s)
                 """,
@@ -75,7 +75,7 @@ async def hybrid_search(pool, settings, query: str, types: list[str] | None = No
         results.append({
             "id": r[0], "type": r[1], "title": r[2], "content": r[3],
             "status": r[4], "priority": r[5],
-            "due_date": r[6].isoformat() if r[6] else None,
+            "due_at": r[6].isoformat() if r[6] else None,
             "tags": list(r[7] or []), "project": r[8],
         })
     return results

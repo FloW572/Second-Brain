@@ -14,6 +14,7 @@ from app.bot.handlers import help_cmd, start, text_handler, voice_handler
 from app.config import get_settings
 from app.db import close_pool, init_pool
 from app.ingest.embed import get_model
+from app.reminders import reminder_loop
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,10 +30,20 @@ async def _post_init(app) -> None:
     app.bot_data["anthropic"] = AsyncAnthropic(api_key=settings.anthropic_api_key)
     logger.info("Lade Embedding-Modell %s (einmalig, kann dauern) ...", settings.embedding_model)
     await asyncio.to_thread(get_model, settings.embedding_model)
+    app.bot_data["reminder_task"] = asyncio.create_task(
+        reminder_loop(app.bot, app.bot_data["pool"], settings)
+    )
     logger.info("Second Brain ist bereit. 🧠")
 
 
 async def _post_shutdown(app) -> None:
+    task = app.bot_data.get("reminder_task")
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
     await close_pool()
 
 

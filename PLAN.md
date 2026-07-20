@@ -129,7 +129,10 @@ Neu-Einbetten aller Items.
       (Handler existiert bereits als Platzhalter in `app/bot/handlers.py`)
 - [x] **`update_item`-Tool** — Titel/Inhalt/Typ/Fälligkeit/Priorität/Status/Projekt/Tags ändern
       (partielles Update, Typ-Wechsel hält Status konsistent, re-embedded bei Text-Änderung)
-- [ ] **Erinnerungen** — proaktive Benachrichtigung zu fälligen Todos
+- [x] **Uhrzeiten** — `due_date DATE` → `due_at TIMESTAMPTZ` (Migration 002), Zeit-Parsing
+      in `app/duetime.py` (nur Datum → 09:00 lokal)
+- [x] **Erinnerungen** — asyncio-Hintergrund-Loop (`app/reminders.py`) benachrichtigt
+      proaktiv über fällige, offene Todos; feuert dank `reminded_at` genau einmal
 - [x] **`delete_item`-Tool** — Eintrag per id endgültig löschen (fragt bei Mehrdeutigkeit nach)
 - [x] **Router erkennt Änderungen/Aktionen** an Bestehendem als `query` (kein Duplikat-Bug mehr)
 - [x] **Agent bleibt ehrlich** — bietet nur Aktionen an, die die Tools wirklich können

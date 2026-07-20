@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from app.duetime import parse_due
 from app.ingest.embed import embed_text, to_vector_literal
 from app.ingest.projects import resolve_project
 from app.models import ITEM_TYPES
@@ -29,7 +30,8 @@ TOOLS = [
             "properties": {
                 "status": {"type": "string", "enum": ["open", "doing", "done", "all"],
                            "description": "Default 'open'."},
-                "due_before": {"type": "string", "description": "ISO date; only todos due on/before."},
+                "due_before": {"type": "string",
+                               "description": "ISO date/datetime; only todos due on/before."},
                 "project": {"type": "string", "description": "Filter by project name (partial)."},
                 "priority": {"type": "integer", "enum": [1, 2, 3]},
                 "limit": {"type": "integer"},
@@ -74,8 +76,9 @@ TOOLS = [
                          "description": "Convert the item to another kind, e.g. todo -> note."},
                 "title": {"type": "string", "description": "New title."},
                 "content": {"type": ["string", "null"], "description": "New content, or null to clear."},
-                "due_date": {"type": ["string", "null"],
-                             "description": "New due date as ISO YYYY-MM-DD, or null to clear."},
+                "due_at": {"type": ["string", "null"],
+                           "description": "New due date/time as ISO 'YYYY-MM-DD' or "
+                                          "'YYYY-MM-DDTHH:MM', or null to clear."},
                 "priority": {"type": ["integer", "null"],
                              "description": "1 = high, 2 = medium, 3 = low, or null to clear."},
                 "status": {"type": "string", "enum": ["open", "doing", "done"],
@@ -135,7 +138,7 @@ async def _list_todos(pool, settings, args):
         where.append("i.status = %s")
         params.append(status)
     if args.get("due_before"):
-        where.append("i.due_date <= %s")
+        where.append("i.due_at <= %s")
         params.append(args["due_before"])
     if args.get("project"):
         where.append("p.name ILIKE %s")
@@ -146,10 +149,10 @@ async def _list_todos(pool, settings, args):
     limit = int(args.get("limit", 50))
 
     sql = f"""
-        SELECT i.id, i.title, i.status, i.priority, i.due_date, i.tags, p.name
+        SELECT i.id, i.title, i.status, i.priority, i.due_at, i.tags, p.name
         FROM items i LEFT JOIN projects p ON p.id = i.project_id
         WHERE {' AND '.join(where)}
-        ORDER BY i.due_date ASC NULLS LAST, i.priority ASC NULLS LAST, i.created_at ASC
+        ORDER BY i.due_at ASC NULLS LAST, i.priority ASC NULLS LAST, i.created_at ASC
         LIMIT {limit}
     """
     async with pool.connection() as conn, conn.cursor() as cur:
@@ -157,7 +160,7 @@ async def _list_todos(pool, settings, args):
         rows = await cur.fetchall()
     return {"todos": [
         {"id": r[0], "title": r[1], "status": r[2], "priority": r[3],
-         "due_date": r[4].isoformat() if r[4] else None,
+         "due_at": r[4].isoformat() if r[4] else None,
          "tags": list(r[5] or []), "project": r[6]}
         for r in rows
     ]}
@@ -197,9 +200,12 @@ async def _update_item(pool, settings, args):
     if "content" in args:
         sets.append("content = %s")
         params.append(args["content"])
-    if "due_date" in args:
-        sets.append("due_date = %s")
-        params.append(args["due_date"] or None)
+    if "due_at" in args:
+        sets.append("due_at = %s")
+        params.append(parse_due(args["due_at"], settings.timezone) if args["due_at"] else None)
+        # Rescheduling should allow a fresh reminder for the new time.
+        sets.append("reminded_at = %s")
+        params.append(None)
     if "priority" in args:
         prio = args["priority"]
         if prio is not None and prio not in (1, 2, 3):

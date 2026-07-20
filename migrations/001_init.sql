@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS items (
     project_id  INTEGER REFERENCES projects(id) ON DELETE SET NULL,
     status      TEXT,                              -- todo: open|doing|done ; else NULL
     priority    SMALLINT,                          -- 1 (high) .. 3 (low)
-    due_date    DATE,
+    due_at      TIMESTAMPTZ,                        -- due date (+ optional time)
+    reminded_at TIMESTAMPTZ,                        -- when a reminder was sent (NULL = not yet)
     tags        TEXT[] NOT NULL DEFAULT '{}',
     source      TEXT,                              -- telegram_text | telegram_voice
     raw_input   TEXT,                              -- original message (audit / re-processing)
@@ -35,7 +36,7 @@ CREATE TABLE IF NOT EXISTS items (
 
 CREATE INDEX IF NOT EXISTS items_embedding_idx   ON items USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS items_fts_idx         ON items USING gin (fts);
-CREATE INDEX IF NOT EXISTS items_due_idx         ON items (due_date);
+CREATE INDEX IF NOT EXISTS items_due_at_idx      ON items (due_at);
 CREATE INDEX IF NOT EXISTS items_project_idx     ON items (project_id);
 CREATE INDEX IF NOT EXISTS items_type_status_idx ON items (type, status);
 

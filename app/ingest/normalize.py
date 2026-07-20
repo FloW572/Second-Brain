@@ -32,7 +32,7 @@ def normalize_capture(data: CaptureData, raw_text: str) -> CaptureData:
     status = "open" if itype == "todo" else None
 
     project_hint = (data.get("project_hint") or "").strip() or None
-    due_date = (data.get("due_date") or "").strip() or None
+    due_at = (data.get("due_at") or "").strip() or None
 
     return {
         "type": itype,
@@ -42,5 +42,5 @@ def normalize_capture(data: CaptureData, raw_text: str) -> CaptureData:
         "tags": tags,
         "status": status,
         "project_hint": project_hint,
-        "due_date": due_date,
+        "due_at": due_at,
     }
