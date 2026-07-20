@@ -130,7 +130,10 @@ Neu-Einbetten aller Items.
 - [x] **`update_item`-Tool** — Titel/Inhalt/Fälligkeit/Priorität/Status/Projekt/Tags ändern
       (partielles Update, re-embedded bei Text-Änderung)
 - [ ] **Erinnerungen** — proaktive Benachrichtigung zu fälligen Todos
-- [ ] Mehr Tools: `delete_item`, `create_project`, `reschedule`
+- [x] **`delete_item`-Tool** — Eintrag per id endgültig löschen (fragt bei Mehrdeutigkeit nach)
+- [x] **Router erkennt Änderungen/Aktionen** an Bestehendem als `query` (kein Duplikat-Bug mehr)
+- [x] **Agent bleibt ehrlich** — bietet nur Aktionen an, die die Tools wirklich können
+- [ ] Weitere Tools: `create_project`, `reschedule`
 
 ### 🔮 Phase 3 — Proaktiv & Oberfläche
 

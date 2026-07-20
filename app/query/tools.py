@@ -84,6 +84,16 @@ TOOLS = [
             "required": ["id"],
         },
     },
+    {
+        "name": "delete_item",
+        "description": "Permanently delete an item by id. This cannot be undone. If more than one "
+                       "item could be meant, confirm the exact id with the user before deleting.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"id": {"type": "integer", "description": "The item id to delete."}},
+            "required": ["id"],
+        },
+    },
 ]
 
 
@@ -241,6 +251,19 @@ async def _update_item(pool, settings, args):
     return {"updated": False, "id": item_id, "reason": "not found"}
 
 
+async def _delete_item(pool, settings, args):
+    item_id = args.get("id")
+    if not item_id:
+        return {"deleted": False, "reason": "no id given"}
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute("DELETE FROM items WHERE id = %s RETURNING title, type", (item_id,))
+        row = await cur.fetchone()
+        await conn.commit()
+    if row:
+        return {"deleted": True, "id": item_id, "title": row[0], "type": row[1]}
+    return {"deleted": False, "id": item_id, "reason": "not found"}
+
+
 _DISPATCH = {
     "now": _now,
     "list_projects": _list_projects,
@@ -248,6 +271,7 @@ _DISPATCH = {
     "search": _search,
     "complete_item": _complete_item,
     "update_item": _update_item,
+    "delete_item": _delete_item,
 }
 
 
