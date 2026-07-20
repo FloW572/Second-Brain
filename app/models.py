@@ -1,6 +1,8 @@
-"""Lightweight type hints for records passed around the app.
+"""Shared types and constants used across the app.
 
-These are documentation-only TypedDicts; rows are handled as plain dicts/tuples.
+``CaptureData`` is the contract for the dict that flows through the capture
+pipeline (extract -> normalize -> store). ``ITEM_TYPES`` is the single source
+of truth for the valid item types. DB query rows are still handled as tuples.
 """
 from typing import TypedDict
 

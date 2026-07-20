@@ -1,11 +1,14 @@
 """Pure normalization of the raw structure Claude extracts from a message.
 
-Kept dependency-free so it is trivially unit-testable.
+Kept free of heavy dependencies so it is trivially unit-testable
+(``app.models`` only pulls in ``typing``).
 """
-VALID_TYPES = {"todo", "idea", "note", "reference"}
+from app.models import ITEM_TYPES, CaptureData
+
+VALID_TYPES = set(ITEM_TYPES)
 
 
-def normalize_capture(data: dict, raw_text: str) -> dict:
+def normalize_capture(data: CaptureData, raw_text: str) -> CaptureData:
     raw_text = (raw_text or "").strip()
 
     itype = str(data.get("type") or "note").lower()

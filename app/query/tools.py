@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from app.models import ITEM_TYPES
 from app.search import hybrid_search
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ TOOLS = [
                 "query": {"type": "string"},
                 "types": {"type": "array",
                           "items": {"type": "string",
-                                    "enum": ["todo", "idea", "note", "reference"]}},
+                                    "enum": list(ITEM_TYPES)}},
                 "limit": {"type": "integer"},
             },
             "required": ["query"],

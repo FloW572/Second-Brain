@@ -6,6 +6,7 @@ from app.ingest.embed import embed_text, to_vector_literal
 from app.ingest.extract import extract_structure
 from app.ingest.normalize import normalize_capture
 from app.ingest.projects import resolve_project
+from app.models import CaptureData
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def _confirmation(data: dict, project_name: str | None, due) -> str:
 async def capture(pool, anthropic, text: str, source: str, settings) -> str:
     """Extract, embed and store one captured message. Returns a confirmation string."""
     raw = await extract_structure(anthropic, text, settings)
-    data = normalize_capture(raw, text)
+    data: CaptureData = normalize_capture(raw, text)
 
     emb_lit = to_vector_literal(
         await embed_text(f"{data['title']}\n{data['content'] or ''}", settings.embedding_model)
