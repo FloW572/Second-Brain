@@ -125,8 +125,8 @@ Neu-Einbetten aller Items.
 
 ### 🔜 Phase 2 — Komfort & Editieren
 
-- [ ] **Sprachnachrichten** — Transkription via `faster-whisper`
-      (Handler existiert bereits als Platzhalter in `app/bot/handlers.py`)
+- [x] **Sprachnachrichten** — lokale Transkription via `faster-whisper`
+      (`app/transcribe.py`); Transkript läuft durch dieselbe Pipeline wie Text
 - [x] **`update_item`-Tool** — Titel/Inhalt/Typ/Fälligkeit/Priorität/Status/Projekt/Tags ändern
       (partielles Update, Typ-Wechsel hält Status konsistent, re-embedded bei Text-Änderung)
 - [x] **Uhrzeiten** — `due_date DATE` → `due_at TIMESTAMPTZ` (Migration 002), Zeit-Parsing

@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     extract_model: str = "claude-haiku-4-5-20251001"
     query_model: str = "claude-opus-4-8"
 
+    # Speech-to-text (local, faster-whisper): tiny|base|small|medium|large-v3
+    whisper_model: str = "small"
+    whisper_language: str = "de"  # ISO code, or "auto" to detect
+
     # Locale
     timezone: str = "Europe/Vienna"
 
