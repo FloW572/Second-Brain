@@ -127,8 +127,8 @@ Neu-Einbetten aller Items.
 
 - [ ] **Sprachnachrichten** — Transkription via `faster-whisper`
       (Handler existiert bereits als Platzhalter in `app/bot/handlers.py`)
-- [x] **`update_item`-Tool** — Titel/Inhalt/Fälligkeit/Priorität/Status/Projekt/Tags ändern
-      (partielles Update, re-embedded bei Text-Änderung)
+- [x] **`update_item`-Tool** — Titel/Inhalt/Typ/Fälligkeit/Priorität/Status/Projekt/Tags ändern
+      (partielles Update, Typ-Wechsel hält Status konsistent, re-embedded bei Text-Änderung)
 - [ ] **Erinnerungen** — proaktive Benachrichtigung zu fälligen Todos
 - [x] **`delete_item`-Tool** — Eintrag per id endgültig löschen (fragt bei Mehrdeutigkeit nach)
 - [x] **Router erkennt Änderungen/Aktionen** an Bestehendem als `query` (kein Duplikat-Bug mehr)

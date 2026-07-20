@@ -64,11 +64,14 @@ TOOLS = [
         "name": "update_item",
         "description": "Update fields of an existing item by id. Only the fields you pass are "
                        "changed; omit the rest. Use this to rename, reschedule, reprioritise, "
-                       "move to a project, or change status/tags of a todo/idea/note.",
+                       "move to a project, change status/tags, or convert the item type "
+                       "(e.g. a todo into a note) of a todo/idea/note/reference.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "id": {"type": "integer", "description": "The item id to update."},
+                "type": {"type": "string", "enum": list(ITEM_TYPES),
+                         "description": "Convert the item to another kind, e.g. todo -> note."},
                 "title": {"type": "string", "description": "New title."},
                 "content": {"type": ["string", "null"], "description": "New content, or null to clear."},
                 "due_date": {"type": ["string", "null"],
@@ -203,11 +206,27 @@ async def _update_item(pool, settings, args):
             return {"updated": False, "reason": "priority must be 1, 2, 3 or null"}
         sets.append("priority = %s")
         params.append(prio)
-    if args.get("status"):
-        if args["status"] not in ("open", "doing", "done"):
-            return {"updated": False, "reason": "status must be open, doing or done"}
+    # Type change (e.g. todo -> note). Keep status consistent: todos carry a status,
+    # other types do not.
+    new_type = args.get("type")
+    if new_type is not None:
+        if new_type not in ITEM_TYPES:
+            return {"updated": False, "reason": f"type must be one of {list(ITEM_TYPES)}"}
+        sets.append("type = %s")
+        params.append(new_type)
+
+    status_val = args.get("status")
+    if status_val and status_val not in ("open", "doing", "done"):
+        return {"updated": False, "reason": "status must be open, doing or done"}
+    if new_type is not None:
+        # todo -> keep/derive a status ('open' by default); anything else -> no status
+        status_val = (status_val or "open") if new_type == "todo" else None
         sets.append("status = %s")
-        params.append(args["status"])
+        params.append(status_val)
+    elif status_val:
+        sets.append("status = %s")
+        params.append(status_val)
+
     if args.get("tags") is not None:
         sets.append("tags = %s")
         params.append([t.strip() for t in args["tags"] if isinstance(t, str) and t.strip()])
