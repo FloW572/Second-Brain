@@ -24,8 +24,11 @@ WELCOME = (
 def _is_allowed(user_id: int, settings) -> bool:
     allowed = settings.allowed_user_ids
     if not allowed:
-        logger.warning("ALLOWED_TELEGRAM_USER_IDS is empty — bot is open to everyone!")
-        return True
+        logger.error(
+            "ALLOWED_TELEGRAM_USER_IDS ist leer — Zugriff fuer ALLE gesperrt (deny by default). "
+            "Trage deine Telegram-User-ID in die .env ein."
+        )
+        return False
     return user_id in allowed
 
 
