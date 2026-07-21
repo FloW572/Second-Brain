@@ -29,7 +29,8 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "status": {"type": "string", "enum": ["open", "doing", "done", "all"],
-                           "description": "Default 'open'."},
+                           "description": "Default: active todos (open + doing). Give a specific "
+                                          "status to filter, or 'all' for every status."},
                 "due_before": {"type": "string",
                                "description": "ISO date/datetime; only todos due on/before."},
                 "project": {"type": "string", "description": "Filter by project name (partial)."},
@@ -147,10 +148,14 @@ async def _list_projects(pool, settings, args):
 async def _list_todos(pool, settings, args):
     where = ["i.type = 'todo'"]
     params: list = []
-    status = args.get("status", "open")
-    if status and status != "all":
-        where.append("i.status = %s")
+    status = args.get("status")
+    if status == "all":
+        pass                                    # every status
+    elif status:
+        where.append("i.status = %s")           # a specific status
         params.append(status)
+    else:
+        where.append("i.status <> 'done'")      # default: active todos (open + doing)
     if args.get("due_before"):
         where.append("i.due_at <= %s")
         params.append(args["due_before"])
