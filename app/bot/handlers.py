@@ -1,7 +1,9 @@
 """Telegram message handlers."""
+import asyncio
 import logging
 import os
 import tempfile
+from contextlib import asynccontextmanager
 
 from telegram import Update
 from telegram.constants import ChatAction
@@ -28,6 +30,31 @@ WELCOME = (
     "Ich behalte den Gesprächskontext für Rückfragen. /digest = Tagesüberblick, "
     "/review = Wochenrückblick, /reset = neues Gespräch."
 )
+
+
+@asynccontextmanager
+async def _keep_typing(bot, chat_id):
+    """Hold Telegram's 'typing…' indicator for the whole block — it otherwise expires
+    after ~5s, so slow replies (e.g. web-search enrichment, ~1–2 min) would look dead."""
+    stop = asyncio.Event()
+
+    async def loop():
+        while not stop.is_set():
+            try:
+                await bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+            except Exception:  # noqa: BLE001 - a failed keep-alive must not break the reply
+                logger.debug("send_chat_action failed", exc_info=True)
+            try:
+                await asyncio.wait_for(stop.wait(), timeout=4.0)
+            except asyncio.TimeoutError:
+                pass
+
+    task = asyncio.create_task(loop())
+    try:
+        yield
+    finally:
+        stop.set()
+        await task
 
 
 def _is_allowed(user_id: int, settings) -> bool:
@@ -91,13 +118,13 @@ async def _handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE,
     memory = context.bot_data["memory"]
     chat_id = update.effective_chat.id
     try:
-        await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
-        intent = await classify(anthropic, text, settings)
-        if intent == "query":
-            reply = await answer(anthropic, pool, text, settings, history=memory.get(chat_id))
-            memory.add(chat_id, text, reply)          # remember this turn for follow-ups
-        else:
-            reply = await capture(pool, anthropic, text, source, settings)
+        async with _keep_typing(context.bot, chat_id):
+            intent = await classify(anthropic, text, settings)
+            if intent == "query":
+                reply = await answer(anthropic, pool, text, settings, history=memory.get(chat_id))
+                memory.add(chat_id, text, reply)      # remember this turn for follow-ups
+            else:
+                reply = await capture(pool, anthropic, text, source, settings)
     except Exception:
         logger.exception("Failed to handle message")
         reply = "⚠️ Da ist etwas schiefgelaufen. Schau bitte ins Log."
