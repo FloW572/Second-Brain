@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Second Brain 🧠{% endblock %}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: #f4f5f7; color: #1a1a2e; }
+  header { background: #1a1a2e; color: #fff; padding: 16px 20px; }
+  header h1 { margin: 0; font-size: 1.3rem; }
+  a.home { color: #fff; text-decoration: none; }
+  main { max-width: 840px; margin: 0 auto; padding: 20px; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tabs a { padding: 6px 12px; border-radius: 999px; background: #fff; color: #444;
+            text-decoration: none; font-size: .9rem; border: 1px solid #e0e0e6; }
+  .tabs a.active { background: #4a4ae0; color: #fff; border-color: #4a4ae0; }
+  .search { display: flex; gap: 6px; margin-bottom: 16px; }
+  .search input { flex: 1; padding: 9px 12px; border: 1px solid #d0d0d8; border-radius: 8px; }
+  .search button, .search .clear { padding: 9px 12px; border-radius: 8px; border: 1px solid #d0d0d8;
+            background: #fff; cursor: pointer; text-decoration: none; color: #444; }
+  .card { background: #fff; border: 1px solid #e6e6ec; border-radius: 12px; padding: 14px 16px;
+          margin-bottom: 12px; display: flex; justify-content: space-between; gap: 12px; }
+  .card.done .title { text-decoration: line-through; color: #999; }
+  .title { font-weight: 600; }
+  .title .id { color: #aaa; font-weight: 400; font-size: .85rem; }
+  .content { color: #555; font-size: .9rem; margin-top: 4px; }
+  .meta { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .badge { font-size: .75rem; padding: 2px 8px; border-radius: 6px; background: #eef1ff; color: #445; }
+  .badge.status-open { background: #eee; color: #555; }
+  .badge.status-doing { background: #e3f0ff; color: #1560c0; }
+  .badge.status-done { background: #e3f7e8; color: #1a8a3c; }
+  .badge.due { background: #fff0e0; color: #b56a00; }
+  .tag { font-size: .75rem; color: #7a7ac0; }
+  .actions { display: flex; gap: 6px; align-items: flex-start; flex-shrink: 0; }
+  .actions form { margin: 0; }
+  .btn { padding: 6px 10px; border-radius: 8px; border: 1px solid #d0d0d8; background: #fff;
+         color: #333; cursor: pointer; text-decoration: none; font-size: .85rem; display: inline-block; }
+  .btn.ok { background: #1a8a3c; color: #fff; border-color: #1a8a3c; }
+  .btn.danger { background: #fff; color: #c0392b; border-color: #f0c0bc; }
+  .empty { color: #888; text-align: center; padding: 48px 0; }
+  form.edit { background: #fff; border: 1px solid #e6e6ec; border-radius: 12px; padding: 20px;
+              display: flex; flex-direction: column; gap: 14px; }
+  form.edit label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: #555; }
+  form.edit input, form.edit select, form.edit textarea {
+      padding: 8px 10px; border: 1px solid #d0d0d8; border-radius: 8px; font-size: 1rem; font-family: inherit; }
+  .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<header><a class="home" href="/"><h1>Second Brain 🧠</h1></a></header>
+<main>{% block content %}{% endblock %}</main>
+</body>
+</html>

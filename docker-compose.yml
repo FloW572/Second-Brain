@@ -30,6 +30,24 @@ services:
       # Persist the downloaded embedding model between restarts.
       - hf_cache:/root/.cache/huggingface
 
+  # Web dashboard: same image, runs the FastAPI app instead of the bot.
+  web:
+    build: .
+    restart: unless-stopped
+    command: uvicorn app.web.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://secondbrain:${POSTGRES_PASSWORD:-secondbrain}@db:5432/secondbrain
+    ports:
+      # Host 8001 (8000 may be taken by another project); container stays 8000.
+      - "8001:8000"
+    volumes:
+      # Shared model cache (lazy re-embedding on text edits).
+      - hf_cache:/root/.cache/huggingface
+
 volumes:
   pgdata:
   hf_cache:

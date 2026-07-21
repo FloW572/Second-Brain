@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}#{{ item.id }} bearbeiten · Second Brain{% endblock %}
+{% block content %}
+<form class="edit" method="post" action="/edit/{{ item.id }}">
+  <h2 style="margin:0 0 4px">✎ Eintrag #{{ item.id }} bearbeiten</h2>
+
+  <label>Typ
+    <select name="type">
+      {% for t, emoji in type_emoji.items() %}
+      <option value="{{ t }}" {{ 'selected' if item.type == t else '' }}>{{ emoji }} {{ t }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Titel
+    <input type="text" name="title" value="{{ item.title }}" required>
+  </label>
+
+  <label>Inhalt
+    <textarea name="content" rows="3">{{ item.content or '' }}</textarea>
+  </label>
+
+  <label>Status (nur für Todos)
+    <select name="status">
+      <option value="">—</option>
+      {% for s in ['open', 'doing', 'done'] %}
+      <option value="{{ s }}" {{ 'selected' if item.status == s else '' }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Priorität
+    <select name="priority">
+      <option value="">—</option>
+      {% for p, lbl in [(1, 'hoch'), (2, 'mittel'), (3, 'niedrig')] %}
+      <option value="{{ p }}" {{ 'selected' if item.priority == p else '' }}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Fällig
+    <input type="datetime-local" name="due_at" value="{{ item.due_value }}">
+  </label>
+
+  <label>Projekt
+    <input type="text" name="project" value="{{ item.project or '' }}">
+  </label>
+
+  <label>Tags (Komma-getrennt)
+    <input type="text" name="tags" value="{{ item.tags | join(', ') }}">
+  </label>
+
+  <div class="form-actions">
+    <button class="btn ok" type="submit">Speichern</button>
+    <a class="btn" href="/">Abbrechen</a>
+  </div>
+</form>
+{% endblock %}
