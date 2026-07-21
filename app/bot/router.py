@@ -12,10 +12,12 @@ ROUTE_TOOL = {
             "intent": {
                 "type": "string",
                 "enum": ["capture", "query"],
-                "description": "capture = new information to store (todo/idea/note/reference). "
-                               "query = anything about ALREADY-stored data: questions, analysis, "
-                               "OR changes/actions on existing items (edit, rename, reschedule, "
-                               "set priority/status, complete, delete).",
+                "description": "capture = the user wants to STORE new information (a concrete "
+                               "todo/idea/note/reference to keep). query = everything else: "
+                               "questions/analysis about stored data, changes/actions on existing "
+                               "items (edit, rename, reschedule, set priority/status, complete, "
+                               "delete), AND conversation/meta directed at the assistant "
+                               "(greeting, thanks, 'who are you', 'call yourself X').",
             }
         },
         "required": ["intent"],
@@ -24,15 +26,17 @@ ROUTE_TOOL = {
 
 SYSTEM = (
     "Entscheide die Absicht der Nachricht:\n"
-    "- capture = NEUE Information zum Speichern (ein neues Todo/Idee/Notiz/Referenz).\n"
-    "- query = alles, was sich auf BEREITS gespeicherte Daten bezieht: Fragen, Auswertungen "
-    "ODER Änderungen/Aktionen an bestehenden Einträgen (ändern, umbenennen, verschieben, "
-    "Priorität/Status setzen, erledigt markieren, löschen).\n"
-    "Beispiele capture: 'Idee: App für X', 'morgen Rechnung zahlen', 'Notiz: WLAN-Passwort'.\n"
-    "Beispiele query: 'Was soll ich heute tun?', 'Welche Ideen habe ich zu X?', 'Zeig mir offene Todos', "
-    "'Setz Auto verkaufen auf hohe Priorität', 'verschiebe X auf morgen', 'markiere X als erledigt', "
-    "'lösche das doppelte Auto verkaufen'.\n"
-    "Im Zweifel, ob es eine Änderung an Bestehendem ist: query. Antworte nur über das Tool."
+    "- capture = der Nutzer will NEUE Information ABLEGEN (ein konkretes Todo/Idee/Notiz/"
+    "Referenz zum Merken).\n"
+    "- query = alles andere: Fragen/Auswertungen zu gespeicherten Daten, Änderungen/Aktionen "
+    "an bestehenden Einträgen (ändern, umbenennen, verschieben, Priorität/Status setzen, "
+    "erledigt markieren, löschen) UND an den Assistenten gerichtete Konversation/Meta "
+    "(Begrüßung, Dank, 'wer bist du?', 'nenne dich ab jetzt X').\n"
+    "Beispiele capture: 'Idee: App für X', 'morgen 9 Uhr Rechnung zahlen', 'Notiz: WLAN-Passwort'.\n"
+    "Beispiele query: 'Was soll ich heute tun?', 'Zeig mir offene Todos', "
+    "'Setz Auto verkaufen auf hohe Priorität', 'lösche #7', 'Wer bist du?', "
+    "'Nenne dich ab jetzt Husi', 'Danke!'.\n"
+    "Nur wenn klar etwas ABGELEGT werden soll → capture. Sonst → query. Antworte nur über das Tool."
 )
 
 
