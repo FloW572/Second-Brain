@@ -150,8 +150,11 @@ Neu-Einbetten aller Items.
 - [x] **Wöchentliches Review** — proaktiver Wochenrückblick + Fokus-Vorschlag (`app/digest.py`,
       eigener Loop zu `REVIEW_WEEKDAY`/`REVIEW_HOUR`); auch on-demand via `/review`
 - [x] **Web-Dashboard** — FastAPI-Oberfläche (`app/web/`, eigener Compose-Service auf Port 8001):
-      Items browsen/filtern, semantische Suche, bearbeiten/erledigen/löschen; nutzt dieselben
-      Tool-Handler wie der Bot
+      Items browsen/filtern, semantische Suche, bearbeiten/erledigen/löschen; Projekt-Ansicht;
+      nutzt dieselben Tool-Handler wie der Bot
+- [x] **Dokumente** — Dateien (xlsx/PDF/Bilder) pro Projekt ablegen, per Dashboard **und** per
+      Telegram (Bildunterschrift = Projekt). Bytes im Volume, Metadaten in der DB
+      (`app/documents.py`, Migration 003)
 - [ ] **Kalender-Integration** (nice-to-have, zurückgestellt) — `.ics`-Export/Abo der Fälligkeiten
       für die Handy-Kalender-App. Bewusst zurückgestellt: die Erinnerungen decken den Kernbedarf
       (rechtzeitig informiert werden) bereits ab; der Kalender wäre nur die Anzeige.

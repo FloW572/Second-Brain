@@ -29,6 +29,8 @@ services:
     volumes:
       # Persist the downloaded embedding model between restarts.
       - hf_cache:/root/.cache/huggingface
+      # Uploaded documents (shared with the web service).
+      - docdata:/data/documents
 
   # Web dashboard: same image, runs the FastAPI app instead of the bot.
   web:
@@ -47,7 +49,10 @@ services:
     volumes:
       # Shared model cache (lazy re-embedding on text edits).
       - hf_cache:/root/.cache/huggingface
+      # Uploaded documents (shared with the bot).
+      - docdata:/data/documents
 
 volumes:
   pgdata:
   hf_cache:
+  docdata:

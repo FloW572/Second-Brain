@@ -12,7 +12,9 @@ from telegram.ext import (
 
 from app.bot.handlers import (
     digest_cmd,
+    document_handler,
     help_cmd,
+    photo_handler,
     reset_cmd,
     review_cmd,
     start,
@@ -85,6 +87,8 @@ def main() -> None:
     app.add_handler(CommandHandler("digest", digest_cmd))
     app.add_handler(CommandHandler("review", review_cmd))
     app.add_handler(MessageHandler(filters.VOICE, voice_handler))
+    app.add_handler(MessageHandler(filters.Document.ALL, document_handler))
+    app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
     logger.info("Starte Polling ...")
