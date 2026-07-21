@@ -100,6 +100,20 @@ TOOLS = [
             "required": ["id"],
         },
     },
+    {
+        "name": "create_project",
+        "description": "Create a new project, optionally with a description. Use this to set up "
+                       "an (empty) project explicitly. If a project with that name already exists, "
+                       "it is returned instead of creating a duplicate.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Project name."},
+                "description": {"type": ["string", "null"], "description": "Optional description."},
+            },
+            "required": ["name"],
+        },
+    },
 ]
 
 
@@ -289,6 +303,31 @@ async def _delete_item(pool, settings, args):
     return {"deleted": False, "id": item_id, "reason": "not found"}
 
 
+async def _create_project(pool, settings, args):
+    name = (args.get("name") or "").strip()
+    if not name:
+        return {"created": False, "reason": "no name given"}
+    description = args.get("description")
+    async with pool.connection() as conn, conn.cursor() as cur:
+        # Don't create a duplicate of an existing (non-archived) project.
+        await cur.execute(
+            "SELECT id, name FROM projects "
+            "WHERE name ILIKE %s AND status <> 'archived' ORDER BY id LIMIT 1",
+            (name,),
+        )
+        existing = await cur.fetchone()
+        if existing:
+            return {"created": False, "id": existing[0], "name": existing[1],
+                    "reason": "already exists"}
+        await cur.execute(
+            "INSERT INTO projects (name, description) VALUES (%s, %s) RETURNING id, name",
+            (name, description),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+    return {"created": True, "id": row[0], "name": row[1]}
+
+
 _DISPATCH = {
     "now": _now,
     "list_projects": _list_projects,
@@ -297,6 +336,7 @@ _DISPATCH = {
     "complete_item": _complete_item,
     "update_item": _update_item,
     "delete_item": _delete_item,
+    "create_project": _create_project,
 }
 
 
