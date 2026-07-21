@@ -10,10 +10,11 @@ from telegram.ext import (
     filters,
 )
 
-from app.bot.handlers import help_cmd, start, text_handler, voice_handler
+from app.bot.handlers import help_cmd, reset_cmd, start, text_handler, voice_handler
 from app.config import get_settings
 from app.db import close_pool, init_pool
 from app.ingest.embed import get_model
+from app.memory import ConversationMemory
 from app.reminders import reminder_loop
 
 logging.basicConfig(
@@ -28,6 +29,7 @@ async def _post_init(app) -> None:
     app.bot_data["settings"] = settings
     app.bot_data["pool"] = await init_pool(settings.database_url)
     app.bot_data["anthropic"] = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    app.bot_data["memory"] = ConversationMemory()
     logger.info("Lade Embedding-Modell %s (einmalig, kann dauern) ...", settings.embedding_model)
     await asyncio.to_thread(get_model, settings.embedding_model)
     app.bot_data["reminder_task"] = asyncio.create_task(
@@ -63,6 +65,7 @@ def main() -> None:
     )
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("reset", reset_cmd))
     app.add_handler(MessageHandler(filters.VOICE, voice_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
