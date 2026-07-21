@@ -6,12 +6,15 @@
   {% if q %}<a class="clear" href="/">✕</a>{% endif %}
 </form>
 
-{% if not q %}
+{% if project_name %}
+<div class="context">📁 {{ project_name }} <a href="/projects">← Projekte</a></div>
+{% elif not q %}
 <nav class="tabs">
   <a href="/" class="{{ 'active' if not active_type else '' }}">Alle</a>
   {% for t, emoji in type_emoji.items() %}
     <a href="/?type={{ t }}" class="{{ 'active' if active_type == t else '' }}">{{ emoji }} {{ t }}</a>
   {% endfor %}
+  <a href="/projects">📁 Projekte</a>
 </nav>
 {% endif %}
 
