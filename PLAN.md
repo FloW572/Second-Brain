@@ -147,7 +147,8 @@ Neu-Einbetten aller Items.
       (z.B. „und diese Woche?") den Kontext behalten; `/reset` startet neu.
 - [x] **Täglicher Digest** — proaktive Morgen-Zusammenfassung/Priorisierung (`app/digest.py`,
       eigener Loop zur `DIGEST_HOUR`, einmal täglich); auch on-demand via `/digest`
-- [ ] **Wöchentliches Review** — offene Punkte, liegen gebliebene Ideen
+- [x] **Wöchentliches Review** — proaktiver Wochenrückblick + Fokus-Vorschlag (`app/digest.py`,
+      eigener Loop zu `REVIEW_WEEKDAY`/`REVIEW_HOUR`); auch on-demand via `/review`
 - [ ] **Web-Dashboard** — Items browsen, editieren, filtern
 - [ ] **Kalender-Integration** — Fälligkeiten als Termine
 
