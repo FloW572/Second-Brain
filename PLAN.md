@@ -145,7 +145,8 @@ Neu-Einbetten aller Items.
 - [x] **Konversations-Gedächtnis** — der Query-Agent kennt die letzten Austausche pro Chat
       (`app/memory.py`, in-memory, begrenzt + Inaktivitäts-Reset), sodass Folgefragen
       (z.B. „und diese Woche?") den Kontext behalten; `/reset` startet neu.
-- [ ] **Täglicher Digest** — morgendliche Zusammenfassung/Priorisierung
+- [x] **Täglicher Digest** — proaktive Morgen-Zusammenfassung/Priorisierung (`app/digest.py`,
+      eigener Loop zur `DIGEST_HOUR`, einmal täglich); auch on-demand via `/digest`
 - [ ] **Wöchentliches Review** — offene Punkte, liegen gebliebene Ideen
 - [ ] **Web-Dashboard** — Items browsen, editieren, filtern
 - [ ] **Kalender-Integration** — Fälligkeiten als Termine

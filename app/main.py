@@ -10,9 +10,10 @@ from telegram.ext import (
     filters,
 )
 
-from app.bot.handlers import help_cmd, reset_cmd, start, text_handler, voice_handler
+from app.bot.handlers import digest_cmd, help_cmd, reset_cmd, start, text_handler, voice_handler
 from app.config import get_settings
 from app.db import close_pool, init_pool
+from app.digest import digest_loop
 from app.ingest.embed import get_model
 from app.memory import ConversationMemory
 from app.reminders import reminder_loop
@@ -35,17 +36,21 @@ async def _post_init(app) -> None:
     app.bot_data["reminder_task"] = asyncio.create_task(
         reminder_loop(app.bot, app.bot_data["pool"], settings)
     )
+    app.bot_data["digest_task"] = asyncio.create_task(
+        digest_loop(app.bot, app.bot_data["pool"], app.bot_data["anthropic"], settings)
+    )
     logger.info("Second Brain ist bereit. 🧠")
 
 
 async def _post_shutdown(app) -> None:
-    task = app.bot_data.get("reminder_task")
-    if task:
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+    for key in ("reminder_task", "digest_task"):
+        task = app.bot_data.get(key)
+        if task:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
     await close_pool()
 
 
@@ -66,6 +71,7 @@ def main() -> None:
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("reset", reset_cmd))
+    app.add_handler(CommandHandler("digest", digest_cmd))
     app.add_handler(MessageHandler(filters.VOICE, voice_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
