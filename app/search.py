@@ -7,6 +7,12 @@ logger = logging.getLogger(__name__)
 
 RRF_K = 60
 
+# Cosine distance above which a vector hit is treated as irrelevant and dropped.
+# Without this cap, kNN always returns the k nearest items even for a query that
+# matches nothing (e.g. "test") — so the search would appear to return everything.
+# Tuned for bge-m3: clear matches sit < ~0.55, unrelated items start around ~0.6.
+MAX_COSINE_DISTANCE = 0.6
+
 
 def rrf(result_lists: list[list], k: int = RRF_K, limit: int | None = None) -> list:
     """Reciprocal Rank Fusion. Merges several ranked id-lists into one ranking."""
@@ -25,15 +31,16 @@ async def hybrid_search(pool, settings, query: str, types: list[str] | None = No
 
     async with pool.connection() as conn:
         async with conn.cursor() as cur:
-            # 1) semantic (cosine distance)
+            # 1) semantic (cosine distance) — only reasonably-close hits (< MAX_COSINE_DISTANCE)
             await cur.execute(
                 """
                 SELECT id FROM items
                 WHERE (%(types)s::text[] IS NULL OR type = ANY(%(types)s::text[]))
+                  AND embedding <=> %(emb)s::vector < %(maxdist)s
                 ORDER BY embedding <=> %(emb)s::vector
                 LIMIT %(n)s
                 """,
-                {"types": types, "emb": emb_lit, "n": fetch},
+                {"types": types, "emb": emb_lit, "n": fetch, "maxdist": MAX_COSINE_DISTANCE},
             )
             vec_ids = [r[0] for r in await cur.fetchall()]
 
