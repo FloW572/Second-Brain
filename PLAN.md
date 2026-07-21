@@ -33,38 +33,62 @@ Leitfragen, die das System beantworten soll:
 ## 2. Architektur
 
 ```
-Handy ──Telegram──▶ Bot (Long-Polling) ──▶ Backend (Python)
-                                            ├─ Router (Claude Haiku): capture | query
-                                            ├─ Capture: Claude strukturiert → Embedding (lokal) → DB
-                                            └─ Query: agentischer Claude-Loop (Opus) mit Tools über die DB
-                                            │
-                                            ▼
-                                  PostgreSQL 16 + pgvector
-                                  (projects, items + embedding + fts)
+Handy ──Telegram──▶ Bot (Long-Polling)        Browser ──HTTP :8001──▶ Web-Dashboard (FastAPI)
+ Text · 🎙 Voice · Datei/Foto  │                                        │
+                               ▼                                        │
+                      Backend (Python)  ◀────────────────────────────────┘
+                      ├─ Voice: faster-whisper (lokal) → Text
+                      ├─ Router (Claude Haiku): capture | query
+                      ├─ Capture: Claude strukturiert → Embedding (lokal) → DB
+                      ├─ Query: agentischer Claude-Loop (Opus) mit Tools über die DB
+                      │    └─ enrich_item → Anthropic-Websuche → Fakten anhängen
+                      └─ Hintergrund-Loops: Erinnerungen · Tages-Digest · Wochen-Review
+                               │
+                               ▼
+                      PostgreSQL 16 + pgvector
+                      (projects · items[+embedding+fts] · documents)  +  Datei-Volume
 ```
 
 ### Verarbeitungsfluss
 
-1. **Eingang** — Telegram-Nachricht trifft im Bot ein (`app/bot/handlers.py`).
-   Autorisierung über `ALLOWED_TELEGRAM_USER_IDS`.
-2. **Routing** — `app/bot/router.py` klassifiziert mit Haiku via Tool-Call:
-   `capture` (speichern) oder `query` (auswerten). Fallback bei Fehler: `capture`.
-3. **Capture** — `app/ingest/` extrahiert Struktur (Claude), normalisiert, erzeugt
-   ein lokales Embedding (bge-m3) und schreibt in die DB.
-4. **Query** — `app/query/agent.py` fährt einen agentischen Loop (Opus) mit Tools
-   und antwortet begründet.
+1. **Eingang** — Telegram-Nachricht trifft im Bot ein (`app/bot/handlers.py`):
+   Text, 🎙 Sprachnachricht oder Datei/Foto. Autorisierung über `ALLOWED_TELEGRAM_USER_IDS`
+   (leer = alle gesperrt, deny by default). Während langlaufender Antworten hält der Bot die
+   „tippt…"-Anzeige aktiv.
+2. **Sprache → Text** — Sprachnachrichten werden lokal mit `faster-whisper` transkribiert
+   (`app/transcribe.py`) und laufen danach durch dieselbe Pipeline wie Text.
+3. **Routing** — `app/bot/router.py` klassifiziert mit Haiku via Tool-Call:
+   `capture` (speichern) oder `query` (auswerten/handeln). Fallback bei Fehler: `capture`.
+4. **Capture** — `app/ingest/` extrahiert Struktur (Claude), normalisiert, erzeugt
+   ein lokales Embedding (bge-m3), ordnet ein Projekt zu und schreibt in die DB.
+5. **Query** — `app/query/agent.py` fährt einen agentischen Loop (Opus) mit Tools und
+   antwortet begründet — inkl. Lesen/Suchen, Ändern/Löschen, Erledigen und Faktenrecherche
+   per Websuche (`enrich_item`). Ein Konversations-Gedächtnis (`app/memory.py`) hält den
+   Kontext für Rückfragen.
+6. **Dateien** — hochgeladene Dokumente/Fotos werden je Projekt abgelegt (`app/documents.py`):
+   Bytes im Volume, Metadaten in der DB.
+7. **Proaktiv** — Hintergrund-Loops verschicken fällige Erinnerungen (`app/reminders.py`),
+   einen täglichen Digest und ein wöchentliches Review (`app/digest.py`).
+8. **Web-Dashboard** — ein separater FastAPI-Dienst (`app/web/`) liest dieselbe DB und nutzt
+   dieselben Aktions-Handler; browsen, suchen, bearbeiten, Dokumente verwalten im Browser.
 
 ### Komponenten
 
 | Bereich   | Dateien                              | Aufgabe |
 |-----------|--------------------------------------|---------|
-| Einstieg  | `app/main.py`                        | Bot starten, Pool/Anthropic-Client/Embedding-Modell initialisieren |
+| Einstieg  | `app/main.py`                        | Bot starten, Pool/Anthropic-Client/Embedding-Modell + Hintergrund-Loops initialisieren |
 | Config    | `app/config.py`                      | Settings aus `.env` (Pydantic) |
-| Bot       | `app/bot/handlers.py`, `router.py`   | Telegram-Handler, Intent-Routing |
+| Bot       | `app/bot/handlers.py`, `router.py`   | Telegram-Handler (Text/Voice/Datei/Foto, Befehle), Intent-Routing, „tippt…"-Anzeige |
+| Sprache   | `app/transcribe.py`                  | Lokale Transkription von Sprachnachrichten (`faster-whisper`) |
 | Ingest    | `app/ingest/extract.py`, `normalize.py`, `embed.py`, `projects.py` | Struktur extrahieren, normalisieren, einbetten, Projekt zuordnen |
-| Suche     | `app/search.py`                      | Hybride Suche (Vektor + Volltext) mit RRF-Fusion |
-| Query     | `app/query/agent.py`, `tools.py`     | Reasoning-Loop + Tools über die DB |
-| Daten     | `migrations/001_init.sql`, `app/db.py`, `app/models.py` | Schema, Connection-Pool, Typen |
+| Suche     | `app/search.py`                      | Hybride Suche (Vektor + Volltext) mit RRF-Fusion, Distanz-Schwelle |
+| Query     | `app/query/agent.py`, `tools.py`     | Reasoning-Loop + Tools über die DB (inkl. `enrich_item` via Websuche) |
+| Gedächtnis| `app/memory.py`                      | Kurzes Konversations-Gedächtnis pro Chat (in-memory, Inaktivitäts-Reset) |
+| Zeit      | `app/duetime.py`                     | Fälligkeiten parsen (Datum → 09:00 lokal), Zeitzone `TIMEZONE` |
+| Proaktiv  | `app/reminders.py`, `app/digest.py`  | Erinnerungs-Loop, täglicher Digest & wöchentliches Review |
+| Dokumente | `app/documents.py`                   | Datei-Anhänge je Projekt (Bytes im Volume, Metadaten in DB) |
+| Dashboard | `app/web/main.py`, `app/web/templates/` | FastAPI-Weboberfläche (browsen, suchen, bearbeiten, Dokumente) |
+| Daten     | `migrations/001_init.sql`, `002_add_reminders.sql`, `003_documents.sql`, `app/db.py`, `app/models.py` | Schema + Migrationen, Connection-Pool, Typen |
 
 ---
 
@@ -82,29 +106,42 @@ Definiert in [`migrations/001_init.sql`](migrations/001_init.sql).
 - `project_id` → `projects` (FK, `ON DELETE SET NULL`)
 - `status` — bei Todos `open | doing | done`, sonst `NULL`
 - `priority` — `1` (hoch) … `3` (niedrig)
-- `due_date`, `tags[]`
+- `due_at TIMESTAMPTZ`, `reminded_at TIMESTAMPTZ` (NULL = noch nicht erinnert), `tags[]`
 - `source` — `telegram_text | telegram_voice`
 - `raw_input` — Originalnachricht (Audit / Re-Processing)
 - `embedding VECTOR(1024)` — **Dimension muss zu `EMBEDDING_MODEL` passen** (bge-m3 = 1024)
 - `fts TSVECTOR` — generierte Spalte (deutsche Textsuche über `title` + `content`)
 
-**Indizes:** HNSW auf `embedding` (Cosine), GIN auf `fts`, B-Tree auf `due_date`,
-`project_id`, `(type, status)`. Trigger halten `updated_at` aktuell.
+**`documents`** (Migration 003) — Datei-Anhänge je Projekt: `id`, `project_id` → `projects`
+(FK, `ON DELETE CASCADE`), `filename`, `content_type`, `size_bytes`, `created_at`. Die
+Datei-**Bytes** liegen im Volume `docdata` (`DOCS_DIR/<id>`), nur die **Metadaten** in der DB.
+
+**Indizes:** HNSW auf `embedding` (Cosine), GIN auf `fts`, B-Tree auf `due_at`,
+`project_id`, `(type, status)` sowie `documents(project_id)`. Trigger halten `updated_at` aktuell.
+
+> **Migrationen:** `002_add_reminders.sql` hob `due_date DATE` → `due_at TIMESTAMPTZ` an und
+> ergänzte `reminded_at`; `003_documents.sql` legte die `documents`-Tabelle an. Beide sind
+> idempotent; Neuinstallationen erhalten die Endform bereits aus `001_init.sql`.
 
 ---
 
 ## 4. Modelle
 
-| Rolle        | Modell (Default)              | Konfig-Variable   |
-|--------------|-------------------------------|-------------------|
-| Embedding    | `BAAI/bge-m3` (lokal, 1024-d) | `EMBEDDING_MODEL` |
-| Routing      | `claude-haiku-4-5-...`        | `ROUTER_MODEL`    |
-| Extraktion   | `claude-haiku-4-5-...`        | `EXTRACT_MODEL`   |
-| Reasoning    | `claude-opus-4-8`             | `QUERY_MODEL`     |
+| Rolle          | Modell (Default)              | Konfig-Variable   |
+|----------------|-------------------------------|-------------------|
+| Embedding      | `BAAI/bge-m3` (lokal, 1024-d) | `EMBEDDING_MODEL` |
+| Sprache → Text | `faster-whisper` (lokal, CPU) | `WHISPER_MODEL`, `WHISPER_LANGUAGE` |
+| Routing        | `claude-haiku-4-5-...`        | `ROUTER_MODEL`    |
+| Extraktion     | `claude-haiku-4-5-...`        | `EXTRACT_MODEL`   |
+| Reasoning      | `claude-opus-4-8`             | `QUERY_MODEL`     |
 
-Embeddings laufen lokal (kostenlos, deutschtauglich). **Achtung:** Wechsel von
-`EMBEDDING_MODEL` erfordert Anpassung der Vektordimension im Schema und ein
+Embeddings **und** Spracherkennung laufen lokal (kostenlos, deutschtauglich). **Achtung:**
+Wechsel von `EMBEDDING_MODEL` erfordert Anpassung der Vektordimension im Schema und ein
 Neu-Einbetten aller Items.
+
+**Websuche:** Die Faktenrecherche (`enrich_item`) nutzt das **Server-Tool `web_search`** der
+Anthropic-API (kein separates Modell, läuft über `QUERY_MODEL`). Sie wird nur auf diesem
+Pfad ausgelöst; normale Abfragen verursachen keine Suchkosten.
 
 ---
 
@@ -140,7 +177,7 @@ Neu-Einbetten aller Items.
       keine Duplikate an)
 - [x] **`reschedule`** — bereits durch `update_item` (`due_at`) abgedeckt; setzt `reminded_at` zurück
 
-### 🔮 Phase 3 — Proaktiv & Oberfläche
+### ✅ Phase 3 — Proaktiv & Oberfläche (umgesetzt; Kalender zurückgestellt)
 
 - [x] **Konversations-Gedächtnis** — der Query-Agent kennt die letzten Austausche pro Chat
       (`app/memory.py`, in-memory, begrenzt + Inaktivitäts-Reset), sodass Folgefragen
@@ -159,13 +196,18 @@ Neu-Einbetten aller Items.
       für die Handy-Kalender-App. Bewusst zurückgestellt: die Erinnerungen decken den Kernbedarf
       (rechtzeitig informiert werden) bereits ab; der Kalender wäre nur die Anzeige.
 
-### 🔮 Phase 4 — Anreicherung & Recherche
+### ✅ Phase 4 — Anreicherung & Recherche (umgesetzt)
 
-- [x] **Fakten-Anreicherung** — „Ergänze Referenz X um relevante Fakten": das `enrich_item`-Tool
-      recherchiert per **Anthropic-Websuche** (`web_search`, Server-Tool) die wichtigsten
-      typgerechten Fakten (z.B. Hotel → Adresse/Telefon/Bewertung, Buch → Autor/Jahr) und hängt
-      sie an den Inhalt an (re-embedded). Die Websuche ist auf diesen Pfad beschränkt, damit
-      normale Abfragen kostenfrei bleiben; findet sie nichts Verlässliches, wird nichts erfunden.
+- [x] **Fakten-Anreicherung** — „Ergänze Referenz X um relevante Fakten" (für **jeden**
+      Eintragstyp): das `enrich_item`-Tool findet den Eintrag per `search` und recherchiert
+      per **Anthropic-Websuche** (`web_search`, Server-Tool) die wichtigsten typgerechten
+      Fakten (z.B. Hotel → Adresse/Telefon/Bewertung, Buch → Autor/Jahr) und hängt sie an den
+      Inhalt an (re-embedded). Erneutes Ergänzen **ersetzt** den vorhandenen Fakten-Block
+      (kein Stapeln); Such-Kommentare und Zitat-Markup werden herausgefiltert. Die Websuche ist
+      auf diesen Pfad beschränkt, damit normale Abfragen kostenfrei bleiben; findet sie nichts
+      Verlässliches, wird nichts erfunden.
+- [x] **Responsive Telegram-Antworten** — die „tippt…"-Anzeige bleibt während langlaufender
+      Antworten (v.a. Websuche, ~1–2 Min) durchgehend aktiv, statt nach ~5 s zu verschwinden.
 
 > Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
 > den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
@@ -190,7 +232,8 @@ Neu-Einbetten aller Items.
 ## 7. Tests & Betrieb
 
 - **Tests:** `pytest` — deckt reine Logik ohne DB/API ab
-  (`tests/test_normalize.py`, `test_search.py`, `test_embed.py`).
+  (`tests/test_normalize.py`, `test_search.py`, `test_embed.py`, `test_duetime.py`,
+  `test_memory.py`, `test_digest.py`).
 - **Start:** `docker compose up -d --build`, danach Logs bis
   „Second Brain ist bereit. 🧠".
 - **DB inspizieren:** siehe [README](README.md#datenbank-inspizieren).
