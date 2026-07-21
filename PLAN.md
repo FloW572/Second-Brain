@@ -90,6 +90,20 @@ Handy ──Telegram──▶ Bot (Long-Polling)        Browser ──HTTP :8001
 | Dashboard | `app/web/main.py`, `app/web/templates/` | FastAPI-Weboberfläche (browsen, suchen, bearbeiten, Dokumente) |
 | Daten     | `migrations/001_init.sql`, `002_add_reminders.sql`, `003_documents.sql`, `app/db.py`, `app/models.py` | Schema + Migrationen, Connection-Pool, Typen |
 
+### Datenfluss & Datenschutz
+
+Self-hosted für die **Ablage**, aber nicht offline — das Reasoning läuft über die Anthropic-API.
+
+- **Lokal (nie an Anthropic):** Audio von Sprachnachrichten, Embeddings, Dokument-/Foto-Inhalte,
+  die Datenbank samt Suche, die `.env`.
+- **An Anthropic (Text, TLS):** jede Nachricht (Router), der Erfassungstext (Extraktion), bei
+  Fragen die Frage **plus die per Tools gelesenen Einträge** (Reasoning), Digest/Review (nur wenn
+  aktiviert) sowie die Anreicherung (Eintrag + server-seitige Websuche ins öffentliche Web).
+
+Standardmäßig kein Training auf API-Daten (kommerzielle Bedingungen). Tabellen und
+Sicherheitshinweise (u.a. Dashboard ohne Auth, opt-in-Briefings, deny-by-default) im
+[README](README.md), Abschnitt „Datenschutz".
+
 ---
 
 ## 3. Datenmodell
@@ -183,9 +197,13 @@ Pfad ausgelöst; normale Abfragen verursachen keine Suchkosten.
       (`app/memory.py`, in-memory, begrenzt + Inaktivitäts-Reset), sodass Folgefragen
       (z.B. „und diese Woche?") den Kontext behalten; `/reset` startet neu.
 - [x] **Täglicher Digest** — proaktive Morgen-Zusammenfassung/Priorisierung (`app/digest.py`,
-      eigener Loop zur `DIGEST_HOUR`, einmal täglich); auch on-demand via `/digest`
+      eigener Loop zur `DIGEST_HOUR`, einmal täglich); auch on-demand via `/digest`.
+      Ein-/Ausschalten über `DIGEST_ENABLED` (opt-in, Default aus); die Uhrzeit ist reines
+      24-Stunden-Format und steuert nur noch das *Wann*.
 - [x] **Wöchentliches Review** — proaktiver Wochenrückblick + Fokus-Vorschlag (`app/digest.py`,
-      eigener Loop zu `REVIEW_WEEKDAY`/`REVIEW_HOUR`); auch on-demand via `/review`
+      eigener Loop zu `REVIEW_WEEKDAY`/`REVIEW_HOUR`); auch on-demand via `/review`.
+      Ein-/Ausschalten über `REVIEW_ENABLED` (opt-in, Default aus); ungültige Zeitwerte sind
+      eine Fehlkonfiguration (Warnung), kein stiller Aus-Schalter.
 - [x] **Web-Dashboard** — FastAPI-Oberfläche (`app/web/`, eigener Compose-Service auf Port 8001):
       Items browsen/filtern, semantische Suche, bearbeiten/erledigen/löschen; Projekt-Ansicht;
       nutzt dieselben Tool-Handler wie der Bot
@@ -208,6 +226,22 @@ Pfad ausgelöst; normale Abfragen verursachen keine Suchkosten.
       Verlässliches, wird nichts erfunden.
 - [x] **Responsive Telegram-Antworten** — die „tippt…"-Anzeige bleibt während langlaufender
       Antworten (v.a. Websuche, ~1–2 Min) durchgehend aktiv, statt nach ~5 s zu verschwinden.
+
+> **Der Funktionsumfang bis hier gilt als v1.0.** Die Kernfunktionen (Erfassen, Suchen, Fragen,
+> Bearbeiten, Erinnern, Digest/Review, Dokumente, Dashboard, Anreicherung) sind vollständig,
+> dogfooded und dokumentiert. Ab jetzt: Fehlerbehebungen als Patch (1.0.x), neue Funktionen als
+> Minor (1.x.0), Breaking Changes als Major (2.0.0).
+
+### 🔮 Phase 5 — Betrieb & Beobachtbarkeit (optional, nach v1.0)
+
+Kein Blocker für v1.0 (Einzelnutzer-Betrieb; Logging genügt), aber sinnvoller Ausbau — und ein
+gutes Portfolio-Signal:
+
+- [ ] **Beobachtbarkeit** — strukturierte Logs, einfache Metriken (Anzahl Anfragen, Latenz) und
+      Token-/Kosten-Logging pro Anthropic-Aufruf; optional leichtes Tracing.
+- [ ] **Dashboard-Absicherung** — Login bzw. Reverse-Proxy, falls das Dashboard über localhost
+      hinaus erreichbar sein soll (aktuell bewusst ohne Auth, nur für lokal/vertrauenswürdiges Netz).
+- [ ] **Kosten-/Budget-Grenzen** — optionales Limit/Warnschwelle für Anthropic-Ausgaben.
 
 > Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
 > den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
