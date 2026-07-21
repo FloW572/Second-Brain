@@ -34,7 +34,8 @@ SYSTEM = (
     "(Begrüßung, Dank, 'wer bist du?', 'nenne dich ab jetzt X').\n"
     "Beispiele capture: 'Idee: App für X', 'morgen 9 Uhr Rechnung zahlen', 'Notiz: WLAN-Passwort'.\n"
     "Beispiele query: 'Was soll ich heute tun?', 'Zeig mir offene Todos', "
-    "'Setz Auto verkaufen auf hohe Priorität', 'lösche #7', 'Wer bist du?', "
+    "'Setz Auto verkaufen auf hohe Priorität', 'lösche #7', "
+    "'Ergänze Referenz Quellenhof um relevante Fakten', 'Wer bist du?', "
     "'Nenne dich ab jetzt Husi', 'Danke!'.\n"
     "Nur wenn klar etwas ABGELEGT werden soll → capture. Sonst → query. Antworte nur über das Tool."
 )
