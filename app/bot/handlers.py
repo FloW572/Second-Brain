@@ -10,7 +10,7 @@ from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
 from app.bot.router import classify
-from app.digest import send_digest, send_review
+from app.digest import send_digest, send_learned, send_review
 from app.documents import store_document
 from app.ingest import capture
 from app.ingest.projects import resolve_project
@@ -28,7 +28,8 @@ WELCOME = (
     "• „Welche Ideen habe ich zum Thema X?“\n"
     "• „Zeig mir offene Todos für Projekt Y.“\n\n"
     "Ich behalte den Gesprächskontext für Rückfragen. /digest = Tagesüberblick, "
-    "/review = Wochenrückblick, /reset = neues Gespräch."
+    "/review = Wochenrückblick, /recently_learned = was du zuletzt gelernt hast, "
+    "/reset = neues Gespräch."
 )
 
 
@@ -107,6 +108,18 @@ async def review_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
                              context.bot_data["anthropic"], settings)
     if not sent:
         await update.message.reply_text("⚠️ Konnte das Review nicht erstellen.")
+
+
+async def learned_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.bot_data["settings"]
+    if not _is_allowed(update.effective_user.id, settings):
+        await update.message.reply_text("⛔ Nicht berechtigt.")
+        return
+    async with _keep_typing(context.bot, update.effective_chat.id):
+        sent = await send_learned(context.bot, context.bot_data["pool"],
+                                  context.bot_data["anthropic"], settings)
+    if not sent:
+        await update.message.reply_text("⚠️ Konnte den Lern-Rückblick nicht erstellen.")
 
 
 async def _handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE,

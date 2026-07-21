@@ -35,6 +35,14 @@ REVIEW_QUESTION = (
     "motivierend. Beginne direkt mit dem Inhalt, ohne eigene Begrüßung."
 )
 
+LEARNED_QUESTION = (
+    "Fasse zusammen, was ich in den letzten 7 Tagen gelernt und festgehalten habe. "
+    "Rufe dazu `list_recent` (7 Tage) für neue Notizen und Ideen sowie für erledigte Todos "
+    "(Typ todo, Status done) auf, fasse das Wesentliche knapp zusammen und leite 1-3 kurze "
+    "Erkenntnisse ab. Gibt es nichts Neues, sag das freundlich, statt etwas zu erfinden. "
+    "Halte es kompakt. Beginne direkt mit dem Inhalt, ohne eigene Begrüßung."
+)
+
 
 async def _broadcast(bot, recipients, message: str) -> int:
     """Send one message to every recipient; return how many got it."""
@@ -64,6 +72,16 @@ async def send_review(bot, pool, anthropic, settings) -> int:
         return 0
     text = await answer(anthropic, pool, REVIEW_QUESTION, settings)
     return await _broadcast(bot, recipients, f"🗓️ Dein Wochenrückblick:\n\n{text}")
+
+
+async def send_learned(bot, pool, anthropic, settings) -> int:
+    """On-demand recap of recently captured notes/ideas + completed todos (/recently_learned)."""
+    recipients = settings.allowed_user_ids
+    if not recipients:
+        logger.warning("Lern-Rückblick angefragt, aber ALLOWED_TELEGRAM_USER_IDS ist leer.")
+        return 0
+    text = await answer(anthropic, pool, LEARNED_QUESTION, settings)
+    return await _broadcast(bot, recipients, f"🧠 Was du zuletzt gelernt/festgehalten hast:\n\n{text}")
 
 
 def _should_send_daily(now_local: datetime, last_sent: date | None, hour: int) -> bool:

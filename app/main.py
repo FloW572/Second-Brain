@@ -14,6 +14,7 @@ from app.bot.handlers import (
     digest_cmd,
     document_handler,
     help_cmd,
+    learned_cmd,
     photo_handler,
     reset_cmd,
     review_cmd,
@@ -86,6 +87,7 @@ def main() -> None:
     app.add_handler(CommandHandler("reset", reset_cmd))
     app.add_handler(CommandHandler("digest", digest_cmd))
     app.add_handler(CommandHandler("review", review_cmd))
+    app.add_handler(CommandHandler("recently_learned", learned_cmd))
     app.add_handler(MessageHandler(filters.VOICE, voice_handler))
     app.add_handler(MessageHandler(filters.Document.ALL, document_handler))
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
