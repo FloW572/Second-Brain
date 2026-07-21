@@ -89,6 +89,7 @@ Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
 - semantische Suche (dieselbe hybride Suche wie im Bot)
 - Einträge **bearbeiten, erledigen, löschen** per Klick
 - **Projekte** durchklicken und je Projekt **Dokumente** (xlsx/PDF/Bilder) hochladen & herunterladen
+- **Dateien**-Ansicht: alle Dokumente auf einen Blick; Projekt-Zuordnung per Dropdown ändern
 
 Sie liest dieselbe Datenbank und nutzt dieselben Aktions-Handler wie der Bot — beide
 Oberflächen bleiben also konsistent. (Host-Port 8001, falls 8000 belegt ist.)
