@@ -81,7 +81,9 @@ async def digest_loop(bot, pool, anthropic, settings):
         logger.info("Täglicher Digest deaktiviert (DIGEST_ENABLED=false); /digest bleibt nutzbar.")
         return
     if not (0 <= settings.digest_hour <= 23):
-        logger.info("Täglicher Digest deaktiviert (DIGEST_HOUR=%s).", settings.digest_hour)
+        logger.warning("DIGEST_HOUR=%s ist ungültig (0-23, 24-Stunden-Format erwartet) — "
+                       "Digest wird nicht gesendet. Zum Abschalten DIGEST_ENABLED=false setzen.",
+                       settings.digest_hour)
         return
     tz = ZoneInfo(settings.timezone)
     logger.info("Digest-Loop gestartet (täglich um %02d:00 %s).",
@@ -107,8 +109,9 @@ async def review_loop(bot, pool, anthropic, settings):
         logger.info("Wöchentliches Review deaktiviert (REVIEW_ENABLED=false); /review bleibt nutzbar.")
         return
     if not (0 <= settings.review_hour <= 23 and 0 <= settings.review_weekday <= 6):
-        logger.info("Wöchentliches Review deaktiviert (REVIEW_WEEKDAY=%s, REVIEW_HOUR=%s).",
-                    settings.review_weekday, settings.review_hour)
+        logger.warning("REVIEW_WEEKDAY=%s/REVIEW_HOUR=%s ist ungültig (Wochentag 0-6, Stunde 0-23) — "
+                       "Review wird nicht gesendet. Zum Abschalten REVIEW_ENABLED=false setzen.",
+                       settings.review_weekday, settings.review_hour)
         return
     tz = ZoneInfo(settings.timezone)
     logger.info("Review-Loop gestartet (Wochentag %s um %02d:00 %s).",
