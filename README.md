@@ -16,11 +16,12 @@ nachfragen — und mit `/stats` jederzeit die geschätzten Kosten im Blick behal
   <img src="docs/demo.gif" width="360" alt="Telegram-Bot: Notiz erfassen und begründet fragen">
 </p>
 
-**Web-Dashboard** — dieselbe Datenbank im Browser: browsen, suchen, bearbeiten, Projekte verwalten.
+**Web-Dashboard** — dieselbe Datenbank im Browser, mit automatischem **Hell-/Dunkelmodus** (oben dunkel, unten hell):
 
 | Alle Einträge | Projekte (umbenennen/löschen) | In einem Projekt |
 |:---:|:---:|:---:|
-| <img src="docs/dashboard_all.png" width="240" alt="Alle Einträge"> | <img src="docs/dashboard_projects.png" width="240" alt="Projekte"> | <img src="docs/project_inside.png" width="240" alt="Projekt-Ansicht mit Dokumenten"> |
+| <img src="docs/dashboard_all.png" width="240" alt="Alle Einträge (dunkel)"> | <img src="docs/dashboard_projects.png" width="240" alt="Projekte (dunkel)"> | <img src="docs/project_inside.png" width="240" alt="Projekt-Ansicht (dunkel)"> |
+| <img src="docs/dashboard_all_light.png" width="240" alt="Alle Einträge (hell)"> | <img src="docs/dashboard_projects_light.png" width="240" alt="Projekte (hell)"> | <img src="docs/project_inside_light.png" width="240" alt="Projekt-Ansicht (hell)"> |
 
 **Was dieses Projekt beinhaltet — in 30 Sekunden:**
 - **RAG in echt:** hybride Suche (Vektor **+** deutscher Volltext, RRF-Fusion, Distanz-Schwelle)
