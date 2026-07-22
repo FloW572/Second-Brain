@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # The unit tests are dependency-light by design: the heavy runtime deps
+      # (torch/sentence-transformers, faster-whisper, python-telegram-bot, psycopg,
+      # fastapi) are either lazy-imported or live in modules the tests don't touch.
+      # So CI needs only pytest (+ tzdata so zoneinfo always resolves).
+      - name: Install test dependencies
+        run: pip install pytest tzdata
+
+      # Byte-compile everything (incl. bot/web/evals) to catch syntax errors in
+      # modules the unit tests don't import — no heavy deps required.
+      - name: Syntax-check all modules
+        run: python -m compileall -q app evals tests
+
+      - name: Run unit tests
+        run: pytest -q
+
+# Note: the model-quality evals (python -m evals.run all) need the database, the
+# embedding model and an API key, so they run manually in the app container, not in CI.
