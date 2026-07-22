@@ -278,20 +278,7 @@ Multi-User-/Betriebs-Themen bleiben bewusst zurückgestellt.
       für einen Ein-Personen-Bot überdimensioniert; die Log-Zeilen + `usage_log` + `/stats` decken den
       Bedarf. Leicht nachrüstbar, falls später gewünscht.
 
-### 🔮 Phase 6 — Geplante Funktionen (nach v1.0)
-
-- [ ] **Proaktive Vorschläge** — der Bot erkennt Muster in den Daten und schlägt von sich aus
-      etwas vor, z.B. „Du hast 3 Ideen zum Thema RAG — soll ich sie zusammenfassen/bündeln?"
-      (auf Basis von Häufung/Ähnlichkeit verwandter Einträge).
-- [ ] **Erledigte Todos im Dashboard ausblenden** — Umschalter im Web, der `done`-Todos
-      standardmäßig ausblendet und nur offene zeigt (bei Bedarf wieder einblendbar).
-- [ ] **Wiederkehrende Todos (recurring)** — Todos mit Wiederholung (täglich/wöchentlich/
-      monatlich); beim Erledigen wird automatisch die nächste Fälligkeit angelegt.
-
-> Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
-> den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
-
-### ✅ Phase 7 — Evaluation-Harness (umgesetzt)
+### ✅ Phase 6 — Evaluation-Harness (umgesetzt)
 
 Getrennt von den Unit-Tests (deterministische Logik) misst ein **Eval-Harness** (`evals/`) die
 **Qualität der modellabhängigen Schritte** auf kleinen gelabelten Datensätzen und gibt eine
@@ -307,8 +294,31 @@ Beobachten einer Kennzahl über die Zeit — etwa um Prompt-Regressionen zu erke
       Richter-Modell gegen eine Rubrik bewertet; Bestanden-Quote (Opus).
 - [x] Reine Metriken (`evals/metrics.py`: accuracy, hit@k, recall@k, MRR) sind unit-getestet.
 
+**Letzte Messung** (im Container, gegen die mitgelieferten Datensätze): Router **100 %** (24/24) ·
+Extraktion **Ø 97,5 %** (Typ 90 %, Fälligkeit/Priorität/Projekt je 100 %) · Retrieval
+**hit@3 100 % / recall@5 93,8 % / MRR 0,938** · Antwort (LLM-Judge) **100 %** (4/4).
+
 Hinweis: `retrieval`/`answer` seeden in die echte `items`-Tabelle (Marker `source='eval'`,
 danach gelöscht); für saubere Zahlen gegen eine kleine/leere DB laufen lassen.
+
+> **Versionssprung → v1.1.0.** Der Stand bis hier ist als **v1.1.0** getaggt und gepusht (Minor
+> über v1.0.0, keine Breaking Changes). Dazu gehört alles seit dem v1.0-Marker: die
+> „Seit v1.0"-Funktionen (Lern-Rückblick, Datei-Kommentare, Projekt-Verwaltung), die Kosten-/
+> Nutzungs-Observability aus Phase 5 und der Eval-Harness (Phase 6). Ab Phase 7 folgt Geplantes,
+> das noch nicht released ist.
+
+### 🔮 Phase 7 — Geplante Funktionen (nach v1.1)
+
+- [ ] **Proaktive Vorschläge** — der Bot erkennt Muster in den Daten und schlägt von sich aus
+      etwas vor, z.B. „Du hast 3 Ideen zum Thema RAG — soll ich sie zusammenfassen/bündeln?"
+      (auf Basis von Häufung/Ähnlichkeit verwandter Einträge).
+- [ ] **Erledigte Todos im Dashboard ausblenden** — Umschalter im Web, der `done`-Todos
+      standardmäßig ausblendet und nur offene zeigt (bei Bedarf wieder einblendbar).
+- [ ] **Wiederkehrende Todos (recurring)** — Todos mit Wiederholung (täglich/wöchentlich/
+      monatlich); beim Erledigen wird automatisch die nächste Fälligkeit angelegt.
+
+> Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
+> den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
 
 ---
 
@@ -321,9 +331,11 @@ danach gelöscht); für saubere Zahlen gegen eine kleine/leere DB laufen lassen.
 - **Mehrbenutzer:** Aktuell auf eine kleine Whitelist ausgelegt; keine Trennung
   der Daten pro Nutzer. Zwei parallele Instanzen sind nicht möglich (ein Poller pro
   Bot-Token; der Reminder-Loop ist auf eine Instanz ausgelegt).
-- **Kosten/Rate-Limits:** Kein Caching der Anthropic-Antworten; keine
-  Budget-Grenzen implementiert.
-- **Beobachtbarkeit:** Nur Logging, keine Metriken/Tracing.
+- **Kosten/Rate-Limits:** Kosten werden pro Aufruf geschätzt, geloggt und in `usage_log`
+  persistiert (`/stats`); es gibt eine optionale Warnschwelle, aber **kein Caching** der
+  Anthropic-Antworten und **keine harte Budget-Grenze**.
+- **Beobachtbarkeit:** strukturierte Logs + Kosten-/Nutzungs-Persistenz + `/stats`; **kein
+  Metrik-Backend/Tracing** (für Einzelbetrieb bewusst weggelassen).
 
 ---
 
