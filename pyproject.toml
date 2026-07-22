@@ -1,6 +1,6 @@
 [project]
 name = "second-brain"
-version = "1.1.0"
+version = "1.2.0"
 description = "Personal second brain — Telegram-first, self-hosted, Claude-powered"
 requires-python = ">=3.11"
 
