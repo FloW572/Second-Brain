@@ -64,7 +64,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 
 | Bereich | Was |
 |---|---|
-| **Erfassen** | Freitext **und Sprachnachrichten** → strukturierte Todos / Ideen / Notizen / Referenzen |
+| **Erfassen** | Freitext **und Sprachnachrichten** → strukturierte Todos / Ideen / Notizen / Referenzen; ein `#Projektname` im Text ordnet direkt einem Projekt zu |
 | **Suche** | hybrid: semantisch (pgvector) **+** deutscher Volltext, fusioniert mit RRF, mit Distanz-Schwelle |
 | **Fragen** | agentischer Claude-Loop, begründete Antworten aus den echten Daten |
 | **Gedächtnis** | kurzes Konversations-Gedächtnis pro Chat für Rückfragen; `/reset` startet neu |
@@ -122,6 +122,7 @@ docker compose logs -f app        # warte auf "Second Brain ist bereit. 🧠"
 Schreib **oder sprich** deinem Bot in Telegram:
 - `Idee: wiederkehrende Rechnungen automatisch erkennen` → als Idee gespeichert
 - `morgen 9 Uhr KFZ-Versicherung kündigen, Projekt Finanzen, wichtig` → Todo mit Fälligkeit + Uhrzeit + Projekt
+- `Geld überweisen #Finanzen` → Todo direkt im Projekt Finanzen (`#Projektname` funktioniert im Text, nicht nur bei Dateien)
 - 🎙️ Sprachnachricht → wird transkribiert und wie Text verarbeitet
 - 📎 Datei/Foto mit Bildunterschrift → Unterschrift = **Kommentar** (Ort/Begebenheit); optionales `#Projektname` ordnet es einem Projekt zu
 - `Was soll ich heute zuerst machen?` → priorisierte, begründete Antwort

@@ -307,6 +307,16 @@ danach gelöscht); für saubere Zahlen gegen eine kleine/leere DB laufen lassen.
 > Nutzungs-Observability aus Phase 5 und der Eval-Harness (Phase 6). Ab Phase 7 folgt Geplantes,
 > das noch nicht released ist.
 
+### ✅ Seit v1.1 — umgesetzt
+
+- [x] **`#Projektname` beim Text-Erfassen** — ein `#Projekt` (auch mit Leerzeichen: `# Finanzen`)
+      in einer Nachricht ordnet den Eintrag deterministisch einem Projekt zu (dieselbe Konvention
+      wie bei Datei-Bildunterschriften), statt es Claude raten zu lassen. Der Tag wird vor der
+      Extraktion entfernt und überschreibt Claudes Vermutung; er muss eigenständig sein
+      (Zeilenanfang oder nach Leerzeichen), damit URL-Fragmente (`…/p#abschnitt`) oder `C#` nicht
+      als Projekt missverstanden werden. Gemeinsame Logik (`extract_project_hashtag`) für Captions
+      und Text.
+
 ### 🔮 Phase 7 — Geplante Funktionen (nach v1.1)
 
 - [ ] **Proaktive Vorschläge** — der Bot erkennt Muster in den Daten und schlägt von sich aus
