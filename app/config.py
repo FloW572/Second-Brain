@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # Document storage: file bytes on disk (a volume); only metadata in the DB
     docs_dir: str = "/data/documents"
 
+    # Observability: per-call token/cost/latency logging is always on; /stats shows the
+    # live total since start. If > 0, log a one-time WARNING when cumulative Anthropic
+    # spend since start crosses this many USD (0 = no warning). Not a hard cap.
+    cost_warn_threshold_usd: float = 0.0
+
     @property
     def allowed_user_ids(self) -> set[int]:
         return {int(x.strip()) for x in self.allowed_telegram_user_ids.split(",") if x.strip()}

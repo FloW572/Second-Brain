@@ -19,6 +19,7 @@ from app.bot.handlers import (
     reset_cmd,
     review_cmd,
     start,
+    stats_cmd,
     text_handler,
     voice_handler,
 )
@@ -28,6 +29,7 @@ from app.digest import digest_loop, review_loop
 from app.ingest.embed import get_model
 from app.memory import ConversationMemory
 from app.reminders import reminder_loop
+from app.usage import set_pool, tracker
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,6 +44,8 @@ async def _post_init(app) -> None:
     app.bot_data["pool"] = await init_pool(settings.database_url)
     app.bot_data["anthropic"] = AsyncAnthropic(api_key=settings.anthropic_api_key)
     app.bot_data["memory"] = ConversationMemory()
+    tracker.configure(settings.timezone, settings.cost_warn_threshold_usd)
+    set_pool(app.bot_data["pool"])
     logger.info("Lade Embedding-Modell %s (einmalig, kann dauern) ...", settings.embedding_model)
     await asyncio.to_thread(get_model, settings.embedding_model)
     app.bot_data["reminder_task"] = asyncio.create_task(
@@ -88,6 +92,7 @@ def main() -> None:
     app.add_handler(CommandHandler("digest", digest_cmd))
     app.add_handler(CommandHandler("review", review_cmd))
     app.add_handler(CommandHandler("recently_learned", learned_cmd))
+    app.add_handler(CommandHandler("stats", stats_cmd))
     app.add_handler(MessageHandler(filters.VOICE, voice_handler))
     app.add_handler(MessageHandler(filters.Document.ALL, document_handler))
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))

@@ -5,6 +5,7 @@ from typing import cast
 from zoneinfo import ZoneInfo
 
 from app.models import ITEM_TYPES, CaptureData
+from app.usage import create_message
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,9 @@ async def extract_structure(anthropic, text: str, settings, now: str | None = No
         f"die aktuelle Zeit auf. Halte den Titel kurz und prägnant. Antworte ausschließlich über das Tool."
     )
     try:
-        resp = await anthropic.messages.create(
+        resp = await create_message(
+            anthropic,
+            label="extract",
             model=settings.extract_model,
             max_tokens=600,
             system=system,

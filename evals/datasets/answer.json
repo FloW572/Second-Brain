@@ -1,0 +1,26 @@
+{
+  "seed": [
+    {"key": "steuer", "type": "todo", "title": "Steuererklärung abgeben",
+     "content": "Belege sammeln und einreichen", "due_at": "2026-07-24T09:00", "priority": 1,
+     "status": "open"},
+    {"key": "zahnarzt", "type": "todo", "title": "Zahnarzttermin Kontrolle",
+     "content": "Routineuntersuchung", "due_at": "2026-07-30T08:30", "priority": 3,
+     "status": "open"},
+    {"key": "geschenk", "type": "todo", "title": "Geschenk für Papa besorgen",
+     "content": "Weinprobe oder ein Buch", "priority": 2, "status": "open"},
+    {"key": "rag_idea", "type": "idea", "title": "RAG-System für Notizen",
+     "content": "Semantische Suche in eigenen Notizen"},
+    {"key": "wlan", "type": "note", "title": "WLAN-Passwort zuhause",
+     "content": "Das Passwort lautet sonnenblume42"}
+  ],
+  "questions": [
+    {"question": "Was ist mein dringendstes Todo?",
+     "rubric": "Die Antwort nennt die Steuererklärung als dringendstes bzw. wichtigstes Todo (früheste Fälligkeit und höchste Priorität)."},
+    {"question": "Wann ist mein Zahnarzttermin?",
+     "rubric": "Die Antwort nennt den 30.07.2026 (30. Juli 2026) als Termin für den Zahnarzt."},
+    {"question": "Wie lautet mein WLAN-Passwort?",
+     "rubric": "Die Antwort nennt das Passwort 'sonnenblume42'."},
+    {"question": "Welche Ideen habe ich notiert?",
+     "rubric": "Die Antwort erwähnt die Idee zu einem RAG-System für Notizen (semantische Suche)."}
+  ]
+}

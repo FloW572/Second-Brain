@@ -1,0 +1,12 @@
+[
+  {"text": "morgen 9 Uhr Zahnarzttermin", "expected": {"type": "todo", "due": true}},
+  {"text": "Idee: App die Kochrezepte aus Fotos erkennt", "expected": {"type": "idea"}},
+  {"text": "Notiz: WLAN-Passwort ist sonnenblume42", "expected": {"type": "note"}},
+  {"text": "Rechnung bis Freitag zahlen, wichtig, Projekt Finanzen", "expected": {"type": "todo", "due": true, "priority": 1, "project": "Finanzen"}},
+  {"text": "Referenz: https://example.com wirklich gutes Tool", "expected": {"type": "reference"}},
+  {"text": "übernächste Woche Steuererklärung abgeben", "expected": {"type": "todo", "due": true}},
+  {"text": "Blogpost-Idee: Vektor-Datenbanken vergleichen", "expected": {"type": "idea"}},
+  {"text": "Milch und Eier kaufen", "expected": {"type": "todo"}},
+  {"text": "Meeting Montag 14 Uhr mit Team, Projekt Website, hohe Prio", "expected": {"type": "todo", "due": true, "priority": 1, "project": "Website"}},
+  {"text": "Gedanke: Second Brain könnte Erinnerungen per Kalender schicken", "expected": {"type": "idea"}}
+]

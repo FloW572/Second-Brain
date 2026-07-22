@@ -1,6 +1,8 @@
 """Cheap intent routing: is a message something to store, or a question to answer?"""
 import logging
 
+from app.usage import create_message
+
 logger = logging.getLogger(__name__)
 
 ROUTE_TOOL = {
@@ -43,7 +45,9 @@ SYSTEM = (
 
 async def classify(anthropic, text: str, settings) -> str:
     try:
-        resp = await anthropic.messages.create(
+        resp = await create_message(
+            anthropic,
+            label="router",
             model=settings.router_model,
             max_tokens=100,
             system=SYSTEM,

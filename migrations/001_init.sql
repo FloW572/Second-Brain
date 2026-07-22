@@ -53,6 +53,22 @@ CREATE TABLE IF NOT EXISTS documents (
 );
 CREATE INDEX IF NOT EXISTS documents_project_idx ON documents (project_id);
 
+-- Per-call Anthropic usage log for cost observability (see app/usage.py). The dollar
+-- figure is an estimate from a local price table; the token counts are Anthropic's own.
+CREATE TABLE IF NOT EXISTS usage_log (
+    id                     SERIAL PRIMARY KEY,
+    label                  TEXT NOT NULL,              -- router | extract | query | research
+    model                  TEXT NOT NULL,
+    input_tokens           INTEGER NOT NULL DEFAULT 0, -- uncached prompt tokens
+    cache_creation_tokens  INTEGER NOT NULL DEFAULT 0,
+    cache_read_tokens      INTEGER NOT NULL DEFAULT 0,
+    output_tokens          INTEGER NOT NULL DEFAULT 0,
+    web_searches           INTEGER NOT NULL DEFAULT 0,
+    cost_usd               NUMERIC(12, 6) NOT NULL DEFAULT 0,
+    created_at             TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS usage_log_created_idx ON usage_log (created_at);
+
 -- Keep updated_at fresh on UPDATE.
 CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
 BEGIN
