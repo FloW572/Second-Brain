@@ -39,13 +39,21 @@ STRUCTURE_TOOL = {
                 "description": "1 = high, 2 = medium, 3 = low; null if unclear.",
             },
             "tags": {"type": "array", "items": {"type": "string"}},
+            "existing_item_id": {
+                "type": ["integer", "null"],
+                "description": "Falls unten bestehende offene Todos aufgelistet sind und diese "
+                               "Nachricht eindeutig eine Aktualisierung eines davon ist (z.B. "
+                               "nennt sie nur eine neue/geänderte Uhrzeit oder ergänzende Details "
+                               "zum selben Vorhaben), dessen id hier eintragen. Sonst null.",
+            },
         },
         "required": ["type", "title"],
     },
 }
 
 
-async def extract_structure(anthropic, text: str, settings, now: str | None = None) -> CaptureData:
+async def extract_structure(anthropic, text: str, settings, now: str | None = None,
+                             candidates: list[dict] | None = None) -> CaptureData:
     now = now or datetime.now(ZoneInfo(settings.timezone)).isoformat(timespec="minutes")
     system = (
         f"Aktuelle Zeit: {now} (Zeitzone {settings.timezone}). Du extrahierst aus einer kurzen "
@@ -53,6 +61,17 @@ async def extract_structure(anthropic, text: str, settings, now: str | None = No
         f"Datums- und Zeitangaben ('morgen', 'nächste Woche', 'Freitag', 'heute 19 Uhr') gegen "
         f"die aktuelle Zeit auf. Halte den Titel kurz und prägnant. Antworte ausschließlich über das Tool."
     )
+    if candidates:
+        cand_lines = "\n".join(
+            f"- id {c['id']}: {c['title']}" + (f" (fällig: {c['due_at']})" if c.get("due_at") else "")
+            for c in candidates
+        )
+        system += (
+            "\n\nFolgende offene Todos existieren bereits und könnten mit dieser Nachricht "
+            f"gemeint sein:\n{cand_lines}\n"
+            "Ist die Nachricht eindeutig eine Aktualisierung eines davon, setze "
+            "existing_item_id entsprechend. Ist es klar etwas Neues, lasse es null."
+        )
     try:
         resp = await create_message(
             anthropic,

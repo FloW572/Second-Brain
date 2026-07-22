@@ -8,6 +8,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlencode
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
@@ -69,7 +70,10 @@ app = FastAPI(title="Second Brain Dashboard", lifespan=lifespan)
 
 
 def _row_to_item(r) -> dict:
-    due = r[6]
+    # due_at comes back from psycopg as a UTC-based TIMESTAMPTZ; convert to the
+    # configured local timezone before formatting, otherwise displayed/edited
+    # times are off by the UTC offset (e.g. 19:30 local shows as 17:30 in summer).
+    due = r[6].astimezone(ZoneInfo(settings.timezone)) if r[6] else None
     return {
         "id": r[0], "type": r[1], "emoji": TYPE_EMOJI.get(r[1], "📝"),
         "title": r[2], "content": r[3], "status": r[4],

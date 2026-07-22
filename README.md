@@ -279,7 +279,9 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
 - **v1.2.0:** `#Projektname` beim Text-Erfassen und **Dashboard-Redesign** (Sidebar-Navigation,
   automatischer Hell-/Dunkelmodus, Karten-Raster, Glassmorphism).
 - **Seit v1.2 (aktueller Stand):** Einträge & Projekte im Dashboard **anlegen**; erledigte Todos
-  standardmäßig **ausblenden** (Umschalter).
+  standardmäßig **ausblenden** (Umschalter); **Duplikat-Erkennung beim Erfassen** (aktualisiert
+  ein passendes offenes Todo statt es zu duplizieren, wenn eine Nachricht eindeutig eine
+  Aktualisierung ist); Dashboard-Fälligkeiten werden jetzt **korrekt in `TIMEZONE`** angezeigt.
 - **Geplant:** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
   wiederkehrende Todos, Relevanz-Aging fürs RAG-Ranking, Health-/Doctor-Check; optional:
   Dashboard-Login und ein Metrik-Backend/Tracing.
