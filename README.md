@@ -47,7 +47,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | **Erinnerungen** | proaktive Benachrichtigung zu fälligen Todos (uhrzeitgenau, Zeitzone `TIMEZONE`) |
 | **Digest & Review** | täglicher Morgenüberblick + wöchentlicher Rückblick, automatisch oder per `/digest` / `/review` |
 | **Lern-Rückblick** | `/recently_learned` — fasst zusammen, was du zuletzt gelernt/festgehalten hast (neue Notizen/Ideen + erledigte Todos der letzten 7 Tage) |
-| **Dokumente** | Dateien (xlsx/PDF/Bilder) je Projekt — per Telegram **und** Dashboard; Bytes im Volume, Metadaten in der DB |
+| **Dokumente** | Dateien (xlsx/PDF/Bilder) je Projekt — per Telegram **und** Dashboard; mit freiem **Kommentar** je Datei (Bildunterschrift; `#Projekt` ordnet zu). Bytes im Volume, Metadaten in der DB |
 | **Web-Dashboard** | FastAPI-Oberfläche zum Browsen, Suchen, Bearbeiten und Verwalten der Dokumente (Port 8001) |
 
 ### Agent-Tools
@@ -93,7 +93,7 @@ Schreib **oder sprich** deinem Bot in Telegram:
 - `Idee: wiederkehrende Rechnungen automatisch erkennen` → als Idee gespeichert
 - `morgen 9 Uhr KFZ-Versicherung kündigen, Projekt Finanzen, wichtig` → Todo mit Fälligkeit + Uhrzeit + Projekt
 - 🎙️ Sprachnachricht → wird transkribiert und wie Text verarbeitet
-- 📎 Datei/Foto (mit Projekt als Bildunterschrift) → als Dokument dem Projekt zugeordnet
+- 📎 Datei/Foto mit Bildunterschrift → Unterschrift = **Kommentar** (Ort/Begebenheit); optionales `#Projektname` ordnet es einem Projekt zu
 - `Was soll ich heute zuerst machen?` → priorisierte, begründete Antwort
 - `Setz "KFZ-Versicherung kündigen" auf hohe Priorität` → bearbeitet den Eintrag
 - `Ergänze Referenz Quellenhof Südtirol um relevante Fakten` → recherchiert per Websuche und hängt die Fakten an (dauert ~1–2 Min, „tippt…" bleibt sichtbar)
@@ -116,15 +116,18 @@ Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
 - semantische Suche (dieselbe hybride Suche wie im Bot)
 - Einträge **bearbeiten, erledigen, löschen** per Klick
 - **Projekte** durchklicken und je Projekt **Dokumente** (xlsx/PDF/Bilder) hochladen & herunterladen
+- **Kommentare** je Datei direkt im Web bearbeiten (und beim Hochladen gleich mitgeben)
 - **Dateien**-Ansicht: alle Dokumente auf einen Blick; Projekt-Zuordnung per Dropdown ändern
 
 Sie liest dieselbe Datenbank und nutzt dieselben Aktions-Handler wie der Bot — beide
 Oberflächen bleiben also konsistent. (Host-Port 8001, falls 8000 belegt ist.)
 
 **Dokumente** gehen auch **per Telegram**: schick dem Bot eine Datei oder ein Foto — die
-**Bildunterschrift** bestimmt das Projekt (ohne Bildunterschrift landet es unter „Ohne Projekt"
-und lässt sich später im Dashboard zuordnen). Dateien liegen im Volume `docdata`, nur die
-Metadaten in der DB.
+**Bildunterschrift** ist ein freier **Kommentar** (z.B. Ort oder Begebenheit) und wird mit der
+Datei gespeichert; ein optionales **`#Projektname`** darin ordnet sie einem Projekt zu (sonst
+landet sie unter „Ohne Projekt" und lässt sich später im Dashboard zuordnen). Die Kommentare
+werden im Dashboard angezeigt und lassen sich dort bearbeiten (und beim Hochladen im Web direkt
+mitgeben). Dateien liegen im Volume `docdata`, nur die Metadaten in der DB.
 
 ## Datenbank inspizieren
 ```bash
@@ -140,9 +143,10 @@ angewandt, z.B.:
 ```bash
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/002_add_reminders.sql
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/003_documents.sql
+docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/004_document_notes.sql
 ```
 `002` hebt `due_date` → `due_at` (mit Uhrzeit) an und ergänzt `reminded_at`; `003` legt die
-`documents`-Tabelle an.
+`documents`-Tabelle an; `004` ergänzt die Kommentar-Spalte `note` an Dokumenten.
 
 ## Tests
 ```bash

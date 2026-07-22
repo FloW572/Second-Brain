@@ -20,6 +20,7 @@ from app.documents import (
     get_document,
     list_all_documents,
     list_documents,
+    set_document_note,
     set_document_project,
     store_document,
 )
@@ -112,11 +113,12 @@ async def index(request: Request, type: str = "", q: str = "", project: str = ""
 
 
 @app.post("/projects/{pid}/documents")
-async def upload_document(pid: int, file: UploadFile = File(...)):
+async def upload_document(pid: int, file: UploadFile = File(...), note: str = Form("")):
     content = await file.read()
     if content:
         await store_document(_pool, settings.docs_dir, pid,
-                             file.filename or "dokument", file.content_type, content)
+                             file.filename or "dokument", file.content_type, content,
+                             note=note.strip() or None)
     return RedirectResponse(f"/?project={pid}", status_code=303)
 
 
@@ -158,6 +160,17 @@ async def documents_view(request: Request):
 async def move_document(doc_id: int, project: str = Form("none")):
     await set_document_project(_pool, doc_id, int(project) if project.isdigit() else None)
     return RedirectResponse("/documents", status_code=303)
+
+
+def _safe_back(back: str) -> str:
+    """Only allow relative in-app redirect targets (avoid open redirects)."""
+    return back if back.startswith("/") and not back.startswith("//") else "/"
+
+
+@app.post("/documents/{doc_id}/note")
+async def edit_document_note(doc_id: int, note: str = Form(""), back: str = Form("/")):
+    await set_document_note(_pool, doc_id, note.strip() or None)
+    return RedirectResponse(_safe_back(back), status_code=303)
 
 
 @app.get("/projects")

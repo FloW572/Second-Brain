@@ -14,7 +14,14 @@
 <section class="docs">
 {% for d in documents %}
   <div class="doc">
-    <a class="doc-name" href="/documents/{{ d.id }}">{{ d.filename }}</a>
+    <div class="doc-info">
+      <a class="doc-name" href="/documents/{{ d.id }}">{{ d.filename }}</a>
+      <form method="post" action="/documents/{{ d.id }}/note" class="doc-note-form">
+        <input type="hidden" name="back" value="/documents">
+        <input type="text" name="note" value="{{ d.note or '' }}" placeholder="💬 Kommentar…">
+        <button class="btn" title="Kommentar speichern">💾</button>
+      </form>
+    </div>
     <span class="doc-size">{{ d.size_display }}</span>
     <form method="post" action="/documents/{{ d.id }}/project" class="doc-move">
       <select name="project" onchange="this.form.submit()">

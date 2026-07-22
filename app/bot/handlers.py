@@ -11,7 +11,7 @@ from telegram.ext import ContextTypes
 
 from app.bot.router import classify
 from app.digest import send_digest, send_learned, send_review
-from app.documents import store_document
+from app.documents import parse_caption, store_document
 from app.ingest import capture
 from app.ingest.projects import resolve_project
 from app.query.agent import answer
@@ -185,25 +185,29 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def _store_incoming_file(update, context, content: bytes,
                                filename: str, content_type: str | None) -> None:
-    """Store an uploaded file; a caption (if any) names the project to attach it to."""
+    """Store an uploaded file. The caption is a free-text comment (location, event, ...);
+    an optional #Projektname in it assigns the project."""
     settings = context.bot_data["settings"]
     pool = context.bot_data["pool"]
-    caption = (update.message.caption or "").strip()
+    project_hint, note = parse_caption(update.message.caption)
     project_name = None
     project_id = None
-    if caption:
+    if project_hint:
         async with pool.connection() as conn:
-            project_id, project_name = await resolve_project(conn, caption)
-    await store_document(pool, settings.docs_dir, project_id, filename, content_type, content)
-    if project_name:
-        await update.message.reply_text(
-            f"📎 „{filename}“ gespeichert – Projekt: {project_name}."
-        )
-    else:
-        await update.message.reply_text(
-            f"📎 „{filename}“ gespeichert (ohne Projekt).\n"
-            "Tipp: Projektnamen als Bildunterschrift mitschicken oder im Dashboard zuordnen."
-        )
+            project_id, project_name = await resolve_project(conn, project_hint)
+    await store_document(pool, settings.docs_dir, project_id, filename, content_type, content,
+                         note=note)
+
+    lines = [f"📎 „{filename}“ gespeichert"
+             + (f" – Projekt: {project_name}" if project_name else "")]
+    if note:
+        lines.append(f"💬 {note}")
+    if not project_name and not note:
+        lines.append("Tipp: Unterschrift = Kommentar (Ort/Begebenheit); "
+                     "mit #Projektname einem Projekt zuordnen (oder später im Dashboard).")
+    elif not project_name:
+        lines.append("Tipp: mit #Projektname einem Projekt zuordnen (oder im Dashboard).")
+    await update.message.reply_text("\n".join(lines))
 
 
 async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
