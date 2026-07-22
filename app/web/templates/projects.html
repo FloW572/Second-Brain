@@ -12,16 +12,29 @@
 {% endif %}
 
 {% for p in projects %}
-<a class="card" href="/?project={{ p.id }}">
+<div class="card">
   <div class="card-main">
-    <div class="title">📁 {{ p.name }}</div>
+    <div class="title"><a href="/?project={{ p.id }}">📁 {{ p.name }}</a></div>
     {% if p.description %}<div class="content">{{ p.description }}</div>{% endif %}
     <div class="meta">
       <span class="badge">{{ p.total }} Einträge</span>
+      {% if p.docs %}<span class="badge">📎 {{ p.docs }} Dateien</span>{% endif %}
       {% if p.open_todos %}<span class="badge status-open">{{ p.open_todos }} offene Todos</span>{% endif %}
     </div>
+    <form method="post" action="/projects/{{ p.id }}/rename" class="rename-form">
+      <input type="text" name="new_name" value="{{ p.name }}" title="Projekt umbenennen">
+      <button class="btn" title="Umbenennen">✏️</button>
+    </form>
   </div>
-</a>
+  {% if p.total == 0 and p.docs == 0 %}
+  <div class="actions">
+    <form method="post" action="/projects/{{ p.id }}/delete"
+          onsubmit="return confirm('Leeres Projekt „{{ p.name }}“ löschen?')">
+      <button class="btn danger" title="Leeres Projekt löschen">🗑</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
 {% endfor %}
 
 {% if no_project %}

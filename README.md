@@ -42,7 +42,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | **Fragen** | agentischer Claude-Loop, begründete Antworten aus den echten Daten |
 | **Gedächtnis** | kurzes Konversations-Gedächtnis pro Chat für Rückfragen; `/reset` startet neu |
 | **Bearbeiten** | `update_item` (Titel/Inhalt/Typ/Fälligkeit/Priorität/Status/Projekt/Tags), `complete_item`, `delete_item` |
-| **Projekte** | automatische Zuordnung beim Erfassen; `create_project`; Projekt-Ansicht im Dashboard |
+| **Projekte** | automatische Zuordnung beim Erfassen; `create_project`, `rename_project` (Einträge bleiben dran), `delete_project` (nur leere); Projekt-Ansicht im Dashboard |
 | **Anreichern** | „Ergänze Eintrag X um relevante Fakten" → Claude recherchiert per **Websuche** die wichtigsten typgerechten Fakten (Hotel: Adresse/Telefon/Bewertung usw.) und hängt sie an den Inhalt an (für jeden Eintragstyp) |
 | **Erinnerungen** | proaktive Benachrichtigung zu fälligen Todos (uhrzeitgenau, Zeitzone `TIMEZONE`) |
 | **Digest & Review** | täglicher Morgenüberblick + wöchentlicher Rückblick, automatisch oder per `/digest` / `/review` |
@@ -63,6 +63,8 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | `update_item` | Felder eines Eintrags ändern (partiell; re-embedded bei Textänderung) |
 | `delete_item` | Eintrag endgültig löschen |
 | `create_project` | neues (leeres) Projekt anlegen (keine Duplikate) |
+| `rename_project` | ein Projekt umbenennen (alle Einträge & Dateien bleiben verknüpft) |
+| `delete_project` | ein **leeres** Projekt löschen (lehnt ab, wenn noch Einträge/Dateien dranhängen) |
 | `enrich_item` | per **Websuche** die wichtigsten Fakten zu einem Eintrag recherchieren und anhängen |
 
 ## Setup
@@ -115,7 +117,7 @@ Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
 - alle Einträge browsen und nach Typ filtern
 - semantische Suche (dieselbe hybride Suche wie im Bot)
 - Einträge **bearbeiten, erledigen, löschen** per Klick
-- **Projekte** durchklicken und je Projekt **Dokumente** (xlsx/PDF/Bilder) hochladen & herunterladen
+- **Projekte** durchklicken, **umbenennen** und je Projekt **Dokumente** (xlsx/PDF/Bilder) hochladen & herunterladen; **leere** Projekte (keine Einträge, keine Dateien) per Klick löschen
 - **Kommentare** je Datei direkt im Web bearbeiten (und beim Hochladen gleich mitgeben)
 - **Dateien**-Ansicht: alle Dokumente auf einen Blick; Projekt-Zuordnung per Dropdown ändern
 

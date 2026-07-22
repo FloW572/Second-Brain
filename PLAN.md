@@ -243,6 +243,12 @@ Pfad ausgelöst; normale Abfragen verursachen keine Suchkosten.
       (z.B. Ort/Begebenheit) und wird mit der Datei gespeichert (`note`, Migration 004); ein
       optionales `#Projektname` darin ordnet die Datei einem Projekt zu. Im Dashboard werden
       Kommentare angezeigt, sind dort inline editierbar und lassen sich schon beim Hochladen angeben.
+- [x] **Projekt-Verwaltung** — Projekte lassen sich **umbenennen** (`rename_project`) und **leere**
+      Projekte **löschen** (`delete_project`; verweigert, solange noch Einträge oder Dateien dranhängen).
+      Umbenennen ändert das Projekt in-place, sodass alle Einträge/Dateien verknüpft bleiben — nötig,
+      weil zuvor nur Einträge einzeln verschiebbar waren und der Fuzzy-Namensabgleich ein Verschieben
+      auf einen Teilnamen (z.B. „Bier Gut" → „Bier") still zum No-Op machte. Verfügbar im Bot **und**
+      im Dashboard (Umbenennen-Feld bzw. Löschen-Button je Projektkarte; Löschen nur bei leeren Projekten).
 
 ### 🔮 Phase 5 — Betrieb & Beobachtbarkeit (optional, nach v1.0)
 
@@ -288,7 +294,8 @@ Kein Blocker für v1.0 (Einzelnutzer-Betrieb; Logging genügt), aber sinnvoller 
 
 - **Tests:** `pytest` — deckt reine Logik ohne DB/API ab
   (`tests/test_normalize.py`, `test_search.py`, `test_embed.py`, `test_duetime.py`,
-  `test_memory.py`, `test_digest.py`, `test_caption.py`).
+  `test_memory.py`, `test_digest.py`, `test_caption.py`); `test_project_tools.py` testet
+  die Projekt-Tools (umbenennen/löschen) gegen eine kleine In-Memory-Fake-DB.
 - **Start:** `docker compose up -d --build`, danach Logs bis
   „Second Brain ist bereit. 🧠".
 - **DB inspizieren:** siehe [README](README.md#datenbank-inspizieren).
