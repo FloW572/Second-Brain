@@ -316,6 +316,17 @@ danach gelöscht); für saubere Zahlen gegen eine kleine/leere DB laufen lassen.
       standardmäßig ausblendet und nur offene zeigt (bei Bedarf wieder einblendbar).
 - [ ] **Wiederkehrende Todos (recurring)** — Todos mit Wiederholung (täglich/wöchentlich/
       monatlich); beim Erledigen wird automatisch die nächste Fälligkeit angelegt.
+- [ ] **Relevanz-Aging (Memory-Decay)** — alte, selten/nie abgefragte Einträge im RAG-Ranking
+      leiser stellen: ein zeit- und zugriffsbasierter Gewichtungsfaktor auf den Suchscore, damit
+      frische/relevante Notizen vorne landen und veraltete Karteileichen nach hinten rutschen
+      (angelehnt an Memory-Decay-Ansätze, z.B. Ebbinghaus). Erfordert das Mitschreiben von
+      Zugriffs-/Trefferzeitpunkten je Eintrag.
+- [ ] **Health-/Doctor-Check** — Betriebs-Selbstdiagnose: ein `/healthz`-Endpoint am Dashboard
+      (Maschinen-Ampel + Compose-Healthcheck) und ein `/doctor`-Telegram-Befehl mit 🟢/🔴-Report
+      über DB, Embedding-Modell, Anthropic-Erreichbarkeit (+ Fehler-/Rate-Limit-Zähler),
+      **Leben der Hintergrund-Loops** (Reminder/Digest/Review — fängt still ausgefallene
+      Erinnerungen ab), Reminder-Frische und Plattenplatz. Optional ein „Canary", der proaktiv
+      nur bei 🟢→🔴 meldet.
 
 > Später denkbar (eigene Phase): **Langzeit-Personalisierung** — dauerhafte Fakten über
 > den Nutzer lernen und in den Kontext einspeisen (analog zu Claudes „Memory").
