@@ -76,7 +76,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | **Digest & Review** | täglicher Morgenüberblick + wöchentlicher Rückblick, automatisch oder per `/digest` / `/review` |
 | **Lern-Rückblick** | `/recently_learned` — fasst zusammen, was du zuletzt gelernt/festgehalten hast (neue Notizen/Ideen + erledigte Todos der letzten 7 Tage) |
 | **Dokumente** | Dateien (xlsx/PDF/Bilder) je Projekt — per Telegram **und** Dashboard; mit freiem **Kommentar** je Datei (Bildunterschrift; `#Projekt` ordnet zu). Bytes im Volume, Metadaten in der DB |
-| **Web-Dashboard** | modernes, responsives FastAPI-UI mit **Sidebar-Navigation** und automatischem **Hell-/Dunkelmodus** — browsen, suchen, bearbeiten, Dokumente verwalten (Port 8001) |
+| **Web-Dashboard** | modernes, responsives FastAPI-UI mit **Sidebar-Navigation** und automatischem **Hell-/Dunkelmodus** — Einträge & Projekte **anlegen**, browsen, suchen, bearbeiten, Dokumente verwalten (Port 8001) |
 | **Kosten & Nutzung** | pro Anthropic-Aufruf werden Tokens, Latenz und geschätzte Kosten geloggt **und in der DB persistiert**; `/stats` zeigt Summen **heute/diesen Monat** je Modell + Fehler-/Rate-Limit-Zähler; optionale Warnschwelle (`COST_WARN_THRESHOLD_USD`) |
 
 ### Agent-Tools
@@ -145,9 +145,11 @@ Schreib **oder sprich** deinem Bot in Telegram:
 Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
 **[http://localhost:8001](http://localhost:8001)**:
 - modernes, responsives Layout mit **Sidebar-Navigation** und automatischem **Hell-/Dunkelmodus**
+- **neue Einträge und Projekte anlegen** — strukturiertes Formular (Eintrag inkl. lokalem Embedding, ohne API-Aufruf)
 - alle Einträge browsen und nach Typ filtern
 - semantische Suche (dieselbe hybride Suche wie im Bot)
 - Einträge **bearbeiten, erledigen, löschen** per Klick
+- erledigte Todos sind standardmäßig **ausgeblendet** — ein Umschalter blendet sie bei Bedarf ein
 - **Projekte** durchklicken, **umbenennen** und je Projekt **Dokumente** (xlsx/PDF/Bilder) hochladen & herunterladen; **leere** Projekte (keine Einträge, keine Dateien) per Klick löschen
 - **Kommentare** je Datei direkt im Web bearbeiten (und beim Hochladen gleich mitgeben)
 - **Dateien**-Ansicht: alle Dokumente auf einen Blick; Projekt-Zuordnung per Dropdown ändern

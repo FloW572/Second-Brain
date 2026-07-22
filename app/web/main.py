@@ -7,6 +7,7 @@ reminder reset stay identical across both interfaces.
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlencode
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
@@ -24,8 +25,12 @@ from app.documents import (
     set_document_project,
     store_document,
 )
+from app.duetime import parse_due
+from app.ingest.embed import embed_text, to_vector_literal
+from app.ingest.projects import resolve_project
 from app.query.tools import (
     _complete_item,
+    _create_project,
     _delete_item,
     _delete_project,
     _rename_project,
@@ -89,32 +94,41 @@ async def _project_name(pid: int) -> str | None:
 
 
 @app.get("/")
-async def index(request: Request, type: str = "", q: str = "", project: str = ""):
+async def index(request: Request, type: str = "", q: str = "", project: str = "",
+                show_done: bool = False):
     project_name = None
     project_id = None
     documents: list[dict] = []
+    # Hide done todos by default in the browsing views; search always shows everything.
+    done = "" if show_done else " AND i.status IS DISTINCT FROM 'done'"
     if q:
         hits = await hybrid_search(_pool, settings, q, None, 30)
         ids = [h["id"] for h in hits]
         items = await _fetch("WHERE i.id = ANY(%(ids)s)", {"ids": ids}) if ids else []
     elif project == "none":
-        items = await _fetch("WHERE i.project_id IS NULL")
+        items = await _fetch(f"WHERE i.project_id IS NULL{done}")
         project_name = "Ohne Projekt"
         documents = await list_documents(_pool, None)
     elif project.isdigit():
         project_id = int(project)
-        items = await _fetch("WHERE i.project_id = %(pid)s", {"pid": project_id})
+        items = await _fetch(f"WHERE i.project_id = %(pid)s{done}", {"pid": project_id})
         project_name = await _project_name(project_id)
         documents = await list_documents(_pool, project_id)
     elif type in TYPE_EMOJI:
-        items = await _fetch("WHERE i.type = %(type)s", {"type": type})
+        items = await _fetch(f"WHERE i.type = %(type)s{done}", {"type": type})
     else:
-        items = await _fetch()
+        items = await _fetch(f"WHERE TRUE{done}")
+    # A toggle link that flips show_done while preserving the current view.
+    toggle_params = {k: v for k, v in request.query_params.items() if k != "show_done"}
+    if not show_done:
+        toggle_params["show_done"] = "1"
+    toggle_url = "/?" + urlencode(toggle_params) if toggle_params else "/"
     return templates.TemplateResponse(
         request=request, name="index.html",
         context={"items": items, "active_type": type, "q": q,
                  "project_name": project_name, "project_id": project_id,
-                 "documents": documents, "type_emoji": TYPE_EMOJI},
+                 "documents": documents, "type_emoji": TYPE_EMOJI,
+                 "show_done": show_done, "toggle_url": toggle_url},
     )
 
 
@@ -206,6 +220,14 @@ async def projects_view(request: Request):
     )
 
 
+@app.post("/projects/create")
+async def create_project(name: str = Form(""), description: str = Form("")):
+    if name.strip():
+        await _create_project(_pool, settings,
+                              {"name": name.strip(), "description": description.strip() or None})
+    return RedirectResponse("/projects", status_code=303)
+
+
 @app.post("/projects/{pid}/rename")
 async def rename_project(pid: int, new_name: str = Form("")):
     # Reuses the bot's handler (rename by exact id); it no-ops on a blank name
@@ -221,6 +243,44 @@ async def delete_project(pid: int):
     # (no items, no files), so a non-empty project simply stays put.
     await _delete_project(_pool, settings, {"id": pid})
     return RedirectResponse("/projects", status_code=303)
+
+
+@app.get("/new")
+async def new_form(request: Request, type: str = "todo"):
+    return templates.TemplateResponse(
+        request=request, name="new.html",
+        context={"type_emoji": TYPE_EMOJI, "default_type": type if type in TYPE_EMOJI else "todo"},
+    )
+
+
+@app.post("/new")
+async def new_apply(title: str = Form(...), type: str = Form("note"),
+                    content: str = Form(""), status: str = Form(""),
+                    priority: str = Form(""), due_at: str = Form(""),
+                    project: str = Form(""), tags: str = Form("")):
+    itype = type if type in TYPE_EMOJI else "note"
+    title = title.strip()[:200] or "(ohne Titel)"
+    content_val = content.strip() or None
+    prio = int(priority) if priority else None
+    due = parse_due(due_at, settings.timezone) if due_at else None
+    status_val = (status or "open") if itype == "todo" else None
+    tags_list = [t.strip() for t in tags.split(",") if t.strip()]
+    emb = to_vector_literal(
+        await embed_text(f"{title}\n{content_val or ''}", settings.embedding_model)
+    )
+    async with _pool.connection() as conn:
+        project_id = None
+        if project.strip():
+            project_id, _ = await resolve_project(conn, project.strip())
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "INSERT INTO items (type, title, content, project_id, status, priority, "
+                "due_at, tags, source, embedding) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'web', %s::vector)",
+                (itype, title, content_val, project_id, status_val, prio, due, tags_list, emb),
+            )
+        await conn.commit()
+    return RedirectResponse("/", status_code=303)
 
 
 @app.get("/edit/{item_id}")
