@@ -9,7 +9,9 @@ werden per **Telegram** — als **Text oder Sprachnachricht** — vom Handy erfa
 
 ## Demo
 
-![Telegram-Bot: Notiz erfassen und begründet fragen](docs/demo.gif)
+<p align="center">
+  <img src="docs/demo.gif" width="360" alt="Telegram-Bot: Notiz erfassen und begründet fragen">
+</p>
 
 **Web-Dashboard** — dieselbe Datenbank im Browser: browsen, suchen, bearbeiten, Projekte verwalten.
 
