@@ -285,3 +285,9 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
   Dashboard-Login und ein Metrik-Backend/Tracing.
 
 Siehe den vollständigen Plan in [PLAN.md](PLAN.md).
+
+## Lizenz
+© 2026 Florian Wagner — lizenziert unter der **GNU Affero General Public License v3.0** (AGPL-3.0),
+siehe [LICENSE](LICENSE). Der Code ist offen und darf genutzt, verändert und weitergegeben werden;
+wer das Programm jedoch betreibt — **auch als Netzwerk-/Web-Dienst** — muss den vollständigen
+Quellcode unter derselben Lizenz zugänglich machen.
