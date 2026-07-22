@@ -316,6 +316,11 @@ danach gelöscht); für saubere Zahlen gegen eine kleine/leere DB laufen lassen.
       (Zeilenanfang oder nach Leerzeichen), damit URL-Fragmente (`…/p#abschnitt`) oder `C#` nicht
       als Projekt missverstanden werden. Gemeinsame Logik (`extract_project_hashtag`) für Captions
       und Text.
+- [x] **Dashboard-Redesign** — die Weboberfläche bekam ein modernes App-Layout: feste
+      **Sidebar-Navigation**, **Karten-Raster** mit farbigem Typ-Akzent je Eintrag, automatischer
+      **Hell-/Dunkelmodus** (CSS-Variablen + `prefers-color-scheme`), dezente Glassmorphism-Panels
+      und ein ambienter Aurora-Hintergrund. Rein CSS, dependency-frei; Templates und
+      Funktionalität unverändert.
 
 ### 🔮 Phase 7 — Geplante Funktionen (nach v1.1)
 

@@ -75,7 +75,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | **Digest & Review** | täglicher Morgenüberblick + wöchentlicher Rückblick, automatisch oder per `/digest` / `/review` |
 | **Lern-Rückblick** | `/recently_learned` — fasst zusammen, was du zuletzt gelernt/festgehalten hast (neue Notizen/Ideen + erledigte Todos der letzten 7 Tage) |
 | **Dokumente** | Dateien (xlsx/PDF/Bilder) je Projekt — per Telegram **und** Dashboard; mit freiem **Kommentar** je Datei (Bildunterschrift; `#Projekt` ordnet zu). Bytes im Volume, Metadaten in der DB |
-| **Web-Dashboard** | FastAPI-Oberfläche zum Browsen, Suchen, Bearbeiten und Verwalten der Dokumente (Port 8001) |
+| **Web-Dashboard** | modernes, responsives FastAPI-UI mit **Sidebar-Navigation** und automatischem **Hell-/Dunkelmodus** — browsen, suchen, bearbeiten, Dokumente verwalten (Port 8001) |
 | **Kosten & Nutzung** | pro Anthropic-Aufruf werden Tokens, Latenz und geschätzte Kosten geloggt **und in der DB persistiert**; `/stats` zeigt Summen **heute/diesen Monat** je Modell + Fehler-/Rate-Limit-Zähler; optionale Warnschwelle (`COST_WARN_THRESHOLD_USD`) |
 
 ### Agent-Tools
@@ -143,6 +143,7 @@ Schreib **oder sprich** deinem Bot in Telegram:
 ## Web-Dashboard
 Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
 **[http://localhost:8001](http://localhost:8001)**:
+- modernes, responsives Layout mit **Sidebar-Navigation** und automatischem **Hell-/Dunkelmodus**
 - alle Einträge browsen und nach Typ filtern
 - semantische Suche (dieselbe hybride Suche wie im Bot)
 - Einträge **bearbeiten, erledigen, löschen** per Klick
