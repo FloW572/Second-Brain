@@ -89,10 +89,19 @@ CREATE TABLE IF NOT EXISTS usage_log (
 );
 CREATE INDEX IF NOT EXISTS usage_log_created_idx ON usage_log (created_at);
 
--- Keep updated_at fresh on UPDATE.
+-- Keep updated_at fresh on UPDATE — except when only a marker column changed.
+-- reminded_at / nudged_at record that something was DELIVERED (a reminder sent, an idea
+-- resurfaced), not that the item itself changed. Refreshing updated_at for those would
+-- make every reminded todo look "just edited" in list_recent and the dashboard.
+-- 'fts' is excluded too: it is GENERATED, so NEW.fts is not yet computed inside a
+-- BEFORE trigger and would otherwise differ from OLD.fts on every update.
 CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
 BEGIN
-    NEW.updated_at = now();
+    IF (to_jsonb(NEW) - 'nudged_at' - 'reminded_at' - 'updated_at' - 'fts')
+       IS DISTINCT FROM
+       (to_jsonb(OLD) - 'nudged_at' - 'reminded_at' - 'updated_at' - 'fts') THEN
+        NEW.updated_at = now();
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

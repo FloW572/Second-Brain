@@ -195,11 +195,15 @@ docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/003_do
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/004_document_notes.sql
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/005_usage_log.sql
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/006_occasions.sql
+docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/007_marker_columns_keep_updated_at.sql
 ```
 `002` hebt `due_date` → `due_at` (mit Uhrzeit) an und ergänzt `reminded_at`; `003` legt die
 `documents`-Tabelle an; `004` ergänzt die Kommentar-Spalte `note` an Dokumenten; `005` legt die
 `usage_log`-Tabelle für die Kosten-Beobachtbarkeit an; `006` legt die `occasions`-Tabelle für
-wiederkehrende Anlässe an und ergänzt `items.nudged_at` für die Ideen-Auffrischung.
+wiederkehrende Anlässe an und ergänzt `items.nudged_at` für die Ideen-Auffrischung; `007`
+sorgt dafür, dass die Marker-Spalten `reminded_at` / `nudged_at` das `updated_at` eines
+Eintrags **nicht** mehr auffrischen (eine zugestellte Erinnerung ist keine inhaltliche
+Änderung — sonst gilt jedes erinnerte Todo als „gerade bearbeitet").
 
 ## Tests
 ```bash
