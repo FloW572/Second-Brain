@@ -14,7 +14,9 @@ from app.bot.handlers import (
     digest_cmd,
     document_handler,
     help_cmd,
+    ideas_cmd,
     learned_cmd,
+    occasions_cmd,
     photo_handler,
     reset_cmd,
     review_cmd,
@@ -28,6 +30,7 @@ from app.db import close_pool, init_pool
 from app.digest import digest_loop, review_loop
 from app.ingest.embed import get_model
 from app.memory import ConversationMemory
+from app.nudges import occasion_loop, resurface_loop
 from app.reminders import reminder_loop
 from app.usage import set_pool, tracker
 
@@ -57,11 +60,18 @@ async def _post_init(app) -> None:
     app.bot_data["review_task"] = asyncio.create_task(
         review_loop(app.bot, app.bot_data["pool"], app.bot_data["anthropic"], settings)
     )
+    app.bot_data["occasion_task"] = asyncio.create_task(
+        occasion_loop(app.bot, app.bot_data["pool"], app.bot_data["anthropic"], settings)
+    )
+    app.bot_data["resurface_task"] = asyncio.create_task(
+        resurface_loop(app.bot, app.bot_data["pool"], app.bot_data["anthropic"], settings)
+    )
     logger.info("Second Brain ist bereit. 🧠")
 
 
 async def _post_shutdown(app) -> None:
-    for key in ("reminder_task", "digest_task", "review_task"):
+    for key in ("reminder_task", "digest_task", "review_task",
+                "occasion_task", "resurface_task"):
         task = app.bot_data.get(key)
         if task:
             task.cancel()
@@ -91,6 +101,8 @@ def main() -> None:
     app.add_handler(CommandHandler("reset", reset_cmd))
     app.add_handler(CommandHandler("digest", digest_cmd))
     app.add_handler(CommandHandler("review", review_cmd))
+    app.add_handler(CommandHandler("occasions", occasions_cmd))
+    app.add_handler(CommandHandler("ideas", ideas_cmd))
     app.add_handler(CommandHandler("recently_learned", learned_cmd))
     app.add_handler(CommandHandler("stats", stats_cmd))
     app.add_handler(MessageHandler(filters.VOICE, voice_handler))

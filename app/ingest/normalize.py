@@ -3,9 +3,32 @@
 Kept free of heavy dependencies so it is trivially unit-testable
 (``app.models`` only pulls in ``typing``).
 """
-from app.models import ITEM_TYPES, CaptureData
+from app.models import ITEM_TYPES, CaptureData, Occasion
 
 VALID_TYPES = set(ITEM_TYPES)
+VALID_KINDS = {"birthday", "anniversary", "custom"}
+
+
+def normalize_occasion(raw) -> Occasion | None:
+    """Keep an extracted recurring date only if it carries a usable day/month."""
+    if not isinstance(raw, dict):
+        return None
+    try:
+        month = int(raw.get("month"))
+        day = int(raw.get("day"))
+    except (TypeError, ValueError):
+        return None
+    if not (1 <= month <= 12 and 1 <= day <= 31):
+        return None
+
+    person = (raw.get("person") or "").strip() or None
+    label = (raw.get("label") or "").strip() or (f"{person} Geburtstag" if person else None)
+    if not label:
+        return None
+    kind = str(raw.get("kind") or "birthday").lower()
+    if kind not in VALID_KINDS:
+        kind = "custom"
+    return {"label": label[:200], "person": person, "kind": kind, "month": month, "day": day}
 
 
 def normalize_capture(data: CaptureData, raw_text: str) -> CaptureData:
@@ -43,4 +66,5 @@ def normalize_capture(data: CaptureData, raw_text: str) -> CaptureData:
         "status": status,
         "project_hint": project_hint,
         "due_at": due_at,
+        "occasion": normalize_occasion(data.get("occasion")),
     }

@@ -8,6 +8,7 @@ from app.ingest.extract import extract_structure
 from app.ingest.normalize import normalize_capture
 from app.ingest.projects import resolve_project
 from app.models import CaptureData
+from app.occasions import add_occasion
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +20,12 @@ _TYPE_LABEL = {
 }
 
 
-def _confirmation(data: dict, project_name: str | None, due) -> str:
+def _confirmation(data: dict, project_name: str | None, due, occasion: dict | None = None) -> str:
     emoji, label = _TYPE_LABEL.get(data["type"], ("📝", "Notiz"))
     lines = [f'{emoji} {label}: {data["title"]}']
+    if occasion:
+        lines.append(f'🎂 Anlass gemerkt: {occasion["label"]} · {occasion["next_date"]} '
+                     f'(Erinnerung {occasion["lead_days"]} Tage vorher)')
     if project_name:
         lines.append(f"📁 Projekt: {project_name}")
     if due:
@@ -71,6 +75,21 @@ async def _update_existing(pool, item_id: int, data: CaptureData, settings) -> s
     return "\n".join(lines)
 
 
+async def _store_occasion(pool, occasion, project_id: int | None, settings) -> dict | None:
+    """Persist a recurring date found in the message, so it nudges every year on its own."""
+    if not occasion:
+        return None
+    result = await add_occasion(
+        pool, occasion["label"], occasion["month"], occasion["day"],
+        person=occasion.get("person"), kind=occasion.get("kind", "birthday"),
+        lead_days=settings.occasion_lead_days, project_id=project_id,
+    )
+    if not result.get("added"):
+        logger.warning("could not store occasion %r: %s", occasion, result.get("reason"))
+        return None
+    return {**result, "label": occasion["label"], "lead_days": settings.occasion_lead_days}
+
+
 async def capture(pool, anthropic, text: str, source: str, settings) -> str:
     """Extract, embed and store one captured message. Returns a confirmation string."""
     # A #Projektname typed in the message assigns the project deterministically (same
@@ -113,4 +132,6 @@ async def capture(pool, anthropic, text: str, source: str, settings) -> str:
         await conn.commit()
 
     logger.info("Stored item id=%s type=%s", item_id, data["type"])
-    return _confirmation(data, project_name, due)
+
+    occasion = await _store_occasion(pool, data.get("occasion"), project_id, settings)
+    return _confirmation(data, project_name, due, occasion)

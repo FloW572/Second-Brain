@@ -8,6 +8,7 @@ from app.duetime import parse_due
 from app.ingest.embed import embed_text, to_vector_literal
 from app.ingest.projects import resolve_project
 from app.models import ITEM_TYPES
+from app.occasions import KINDS, add_occasion, delete_occasion, list_occasions
 from app.search import hybrid_search
 from app.usage import create_message
 
@@ -198,6 +199,51 @@ TOOLS = [
                 "project": {"type": "string", "description": "Project name to delete (partial ok)."},
             },
             "required": ["project"],
+        },
+    },
+    {
+        "name": "add_occasion",
+        "description": "Einen WIEDERKEHRENDEN jährlichen Anlass merken (Geburtstag, Jahrestag, "
+                       "Namenstag). Nutze dies statt eines Todos, wenn ein Datum sich jedes Jahr "
+                       "wiederholt — der Bot meldet sich dann jedes Jahr automatisch `lead_days` "
+                       "vorher mit Ideen aus meinen Notizen zu der Person. Gibt es den Anlass "
+                       "(gleiches Label) schon, wird er aktualisiert statt dupliziert.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "label": {"type": "string", "description": "z.B. 'Luisa Geburtstag'."},
+                "month": {"type": "integer", "description": "Monat 1-12."},
+                "day": {"type": "integer", "description": "Tag 1-31."},
+                "person": {"type": ["string", "null"],
+                           "description": "Name der Person — danach wird nach Ideen gesucht."},
+                "kind": {"type": "string", "enum": list(KINDS),
+                         "description": "birthday | anniversary | custom."},
+                "lead_days": {"type": ["integer", "null"],
+                              "description": "Vorlauf in Tagen (Default 14)."},
+                "notes": {"type": ["string", "null"], "description": "Optionale Notiz."},
+                "project": {"type": ["string", "null"],
+                            "description": "Projektname zum Verknüpfen; wird angelegt, falls neu."},
+            },
+            "required": ["label", "month", "day"],
+        },
+    },
+    {
+        "name": "list_occasions",
+        "description": "Alle gemerkten wiederkehrenden Anlässe, der zeitlich nächste zuerst, "
+                       "je mit Datum und Tagen bis dahin.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"limit": {"type": "integer"}},
+        },
+    },
+    {
+        "name": "delete_occasion",
+        "description": "Einen wiederkehrenden Anlass per id löschen. Bei Mehrdeutigkeit vorher "
+                       "mit `list_occasions` die richtige id klären.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"id": {"type": "integer"}},
+            "required": ["id"],
         },
     },
     {
@@ -626,6 +672,30 @@ async def enrich_item(anthropic, pool, settings, args) -> dict:
     return {"enriched": True, "id": item_id, "title": item["title"], "facts": facts}
 
 
+async def _add_occasion(pool, settings, args):
+    project_id = None
+    if args.get("project"):
+        async with pool.connection() as conn:
+            project_id, _ = await resolve_project(conn, args["project"])
+    return await add_occasion(
+        pool, args["label"], int(args["month"]), int(args["day"]),
+        person=args.get("person"),
+        kind=args.get("kind") or "birthday",
+        lead_days=int(args.get("lead_days") or settings.occasion_lead_days),
+        notes=args.get("notes"),
+        project_id=project_id,
+    )
+
+
+async def _list_occasions(pool, settings, args):
+    today = datetime.now(ZoneInfo(settings.timezone)).date()
+    return {"occasions": await list_occasions(pool, today, int(args.get("limit", 50)))}
+
+
+async def _delete_occasion(pool, settings, args):
+    return await delete_occasion(pool, args["id"])
+
+
 _DISPATCH = {
     "now": _now,
     "list_projects": _list_projects,
@@ -638,6 +708,9 @@ _DISPATCH = {
     "create_project": _create_project,
     "rename_project": _rename_project,
     "delete_project": _delete_project,
+    "add_occasion": _add_occasion,
+    "list_occasions": _list_occasions,
+    "delete_occasion": _delete_occasion,
 }
 
 

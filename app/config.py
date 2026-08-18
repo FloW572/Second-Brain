@@ -44,6 +44,21 @@ class Settings(BaseSettings):
     review_weekday: int = 6
     review_hour: int = 18
 
+    # Anlässe (Geburtstage/Jahrestage): tägliche Prüfung zur lokalen Stunde; gemeldet
+    # wird lead_days im Voraus, damit noch Zeit für Geschenk/Planung bleibt. Der Vorlauf
+    # gilt pro Anlass (Spalte lead_days); dieser Wert ist nur der Default für neue.
+    occasions_enabled: bool = True
+    occasion_hour: int = 9
+    occasion_lead_days: int = 14
+
+    # Ideen-Auffrischung: holt wöchentlich EINE Idee hoch, die seit resurface_min_age_days
+    # unangetastet liegt, und schweigt danach resurface_cooldown_days über sie.
+    resurface_enabled: bool = True
+    resurface_weekday: int = 4
+    resurface_hour: int = 17
+    resurface_min_age_days: int = 30
+    resurface_cooldown_days: int = 90
+
     # Document storage: file bytes on disk (a volume); only metadata in the DB
     docs_dir: str = "/data/documents"
 

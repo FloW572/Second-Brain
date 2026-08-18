@@ -39,6 +39,22 @@ STRUCTURE_TOOL = {
                 "description": "1 = high, 2 = medium, 3 = low; null if unclear.",
             },
             "tags": {"type": "array", "items": {"type": "string"}},
+            "occasion": {
+                "type": ["object", "null"],
+                "description": "NUR setzen, wenn die Nachricht ein jährlich WIEDERKEHRENDES Datum "
+                               "nennt (Geburtstag, Jahrestag, Namenstag) — z.B. 'Luisa hat am "
+                               "17. Mai Geburtstag'. Bei einem einmaligen Termin null lassen "
+                               "(das gehört in due_at).",
+                "properties": {
+                    "label": {"type": "string",
+                              "description": "Kurzbezeichnung, z.B. 'Luisa Geburtstag'."},
+                    "person": {"type": "string", "description": "Name der Person."},
+                    "kind": {"type": "string", "enum": ["birthday", "anniversary", "custom"]},
+                    "month": {"type": "integer", "description": "Monat 1-12."},
+                    "day": {"type": "integer", "description": "Tag 1-31."},
+                },
+                "required": ["label", "month", "day"],
+            },
             "existing_item_id": {
                 "type": ["integer", "null"],
                 "description": "Falls unten bestehende offene Todos aufgelistet sind und diese "
