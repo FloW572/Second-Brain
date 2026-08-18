@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS items (
     due_at      TIMESTAMPTZ,                        -- due date (+ optional time)
     reminded_at TIMESTAMPTZ,                        -- when a reminder was sent (NULL = not yet)
     tags        TEXT[] NOT NULL DEFAULT '{}',
+    nudged_at   TIMESTAMPTZ,                       -- when a dormant idea was last resurfaced
     source      TEXT,                              -- telegram_text | telegram_voice
     raw_input   TEXT,                              -- original message (audit / re-processing)
     embedding   VECTOR(1024),                      -- dim MUST match EMBEDDING_MODEL (bge-m3 = 1024)
@@ -52,6 +53,25 @@ CREATE TABLE IF NOT EXISTS documents (
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS documents_project_idx ON documents (project_id);
+
+-- Yearly recurring dates (birthdays, anniversaries). Deliberately without a year: the
+-- next occurrence is derived from (month, day), and a reminder fires lead_days ahead.
+CREATE TABLE IF NOT EXISTS occasions (
+    id               SERIAL PRIMARY KEY,
+    label            TEXT NOT NULL,                    -- "Luisa Geburtstag"
+    person           TEXT,                             -- links notes/project about that person
+    kind             TEXT NOT NULL DEFAULT 'birthday', -- birthday | anniversary | custom
+    month            SMALLINT NOT NULL CHECK (month BETWEEN 1 AND 12),
+    day              SMALLINT NOT NULL CHECK (day BETWEEN 1 AND 31),
+    lead_days        SMALLINT NOT NULL DEFAULT 14,
+    project_id       INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    notes            TEXT,
+    last_notified_on DATE,                             -- last lead reminder (NULL = never)
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS occasions_date_idx   ON occasions (month, day);
+CREATE INDEX IF NOT EXISTS occasions_person_idx ON occasions (person);
 
 -- Per-call Anthropic usage log for cost observability (see app/usage.py). The dollar
 -- figure is an estimate from a local price table; the token counts are Anthropic's own.
@@ -83,4 +103,8 @@ CREATE TRIGGER trg_items_updated_at BEFORE UPDATE ON items
 
 DROP TRIGGER IF EXISTS trg_projects_updated_at ON projects;
 CREATE TRIGGER trg_projects_updated_at BEFORE UPDATE ON projects
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_occasions_updated_at ON occasions;
+CREATE TRIGGER trg_occasions_updated_at BEFORE UPDATE ON occasions
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();

@@ -43,10 +43,12 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
                                         ├─ Query: agentischer Claude-Loop (Opus) mit Tools
                                         │    └─ enrich_item → Anthropic-Websuche → Fakten
                                         └─ Loops: Erinnerungen · Tages-Digest · Wochen-Review
+                                             · Anlässe (Vorlauf) · Ideen-Auffrischung
                                         │
                                         ▼
                               PostgreSQL 16 + pgvector
-                              (projects · items[+embedding+fts] · documents) + Datei-Volume
+                              (projects · items[+embedding+fts] · documents · occasions)
+                              + Datei-Volume
 ```
 
 - **Erfassen:** Text oder Sprachnachricht (Voice wird lokal transkribiert) → Claude extrahiert
@@ -60,6 +62,13 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
   **eine** proaktive Telegram-Nachricht pro Todo.
 - **Proaktiv:** täglicher **Digest** (Morgenüberblick) und wöchentliches **Review** (Rückblick +
   Fokus), automatisch zur eingestellten Zeit oder on-demand per `/digest` / `/review`.
+- **Anlässe:** „Luisa hat am 17. Mai Geburtstag" wird als **wiederkehrender Anlass** gemerkt (nicht
+  als einmaliges Todo). Der Bot meldet sich jedes Jahr **mit Vorlauf** (Default 14 Tage) — und
+  liefert direkt **Geschenk-/Aktionsideen aus den gespeicherten Notizen zu der Person** mit,
+  jeweils mit der id der Notiz, auf der sie beruhen.
+- **Ideen-Auffrischung:** einmal pro Woche holt der Bot **eine** Idee hoch, die seit Wochen
+  unangetastet herumliegt (z.B. „Canyoning"), sucht dazu passende Personen aus den Notizen und
+  schlägt einen konkreten nächsten Schritt vor — damit gute Ideen nicht still liegen bleiben.
 
 ## Funktionen
 
@@ -74,6 +83,8 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | **Anreichern** | „Ergänze Eintrag X um relevante Fakten" → Claude recherchiert per **Websuche** die wichtigsten typgerechten Fakten (Hotel: Adresse/Telefon/Bewertung usw.) und hängt sie an den Inhalt an (für jeden Eintragstyp) |
 | **Erinnerungen** | proaktive Benachrichtigung zu fälligen Todos (uhrzeitgenau, Zeitzone `TIMEZONE`) |
 | **Digest & Review** | täglicher Morgenüberblick + wöchentlicher Rückblick, automatisch oder per `/digest` / `/review` |
+| **Anlässe** | wiederkehrende Geburtstage/Jahrestage werden beim Erfassen automatisch erkannt und **jedes Jahr mit Vorlauf** gemeldet — inkl. Ideen aus den Notizen zur Person; `/occasions` zeigt die anstehenden (`OCCASIONS_ENABLED`, `OCCASION_LEAD_DAYS`) |
+| **Ideen-Auffrischung** | wöchentlich wird **eine** lange liegengebliebene Idee hochgeholt, mit passenden Personen aus den Notizen verknüpft und mit nächstem Schritt vorgeschlagen; `/ideas` sofort (`RESURFACE_ENABLED`) |
 | **Lern-Rückblick** | `/recently_learned` — fasst zusammen, was du zuletzt gelernt/festgehalten hast (neue Notizen/Ideen + erledigte Todos der letzten 7 Tage) |
 | **Dokumente** | Dateien (xlsx/PDF/Bilder) je Projekt — per Telegram **und** Dashboard; mit freiem **Kommentar** je Datei (Bildunterschrift; `#Projekt` ordnet zu). Bytes im Volume, Metadaten in der DB |
 | **Web-Dashboard** | modernes, responsives FastAPI-UI mit **Sidebar-Navigation** und automatischem **Hell-/Dunkelmodus** — Einträge & Projekte **anlegen**, browsen, suchen, bearbeiten, Dokumente verwalten (Port 8001) |
@@ -95,6 +106,9 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | `rename_project` | ein Projekt umbenennen (alle Einträge & Dateien bleiben verknüpft) |
 | `delete_project` | ein **leeres** Projekt löschen (lehnt ab, wenn noch Einträge/Dateien dranhängen) |
 | `enrich_item` | per **Websuche** die wichtigsten Fakten zu einem Eintrag recherchieren und anhängen |
+| `add_occasion` | einen jährlich wiederkehrenden Anlass merken (Geburtstag/Jahrestag) statt eines Todos |
+| `list_occasions` | alle Anlässe, der zeitlich nächste zuerst (mit Tagen bis dahin) |
+| `delete_occasion` | einen Anlass entfernen |
 
 ## Setup
 
@@ -180,10 +194,12 @@ docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/002_ad
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/003_documents.sql
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/004_document_notes.sql
 docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/005_usage_log.sql
+docker compose exec -T db psql -U secondbrain -d secondbrain < migrations/006_occasions.sql
 ```
 `002` hebt `due_date` → `due_at` (mit Uhrzeit) an und ergänzt `reminded_at`; `003` legt die
 `documents`-Tabelle an; `004` ergänzt die Kommentar-Spalte `note` an Dokumenten; `005` legt die
-`usage_log`-Tabelle für die Kosten-Beobachtbarkeit an.
+`usage_log`-Tabelle für die Kosten-Beobachtbarkeit an; `006` legt die `occasions`-Tabelle für
+wiederkehrende Anlässe an und ergänzt `items.nudged_at` für die Ideen-Auffrischung.
 
 ## Tests
 ```bash
@@ -249,6 +265,7 @@ Reasoning (Claude) nutzt aber die Anthropic-Cloud. Es ist also „self-hosted f�
 | beim Erfassen | zusätzlich der Text → Extraktion (Haiku) |
 | bei Fragen | deine Frage **+ die per Tools gelesenen Einträge** (Titel/Inhalt/Fälligkeit/Projekt/Tags) → Reasoning (Opus) |
 | Digest & Review | lesen Einträge und senden sie an Anthropic — **nur wenn aktiviert** (`DIGEST_ENABLED` / `REVIEW_ENABLED`) |
+| Anlässe & Ideen-Auffrischung | lesen Einträge zur Person bzw. zur Idee und senden sie an Anthropic — abschaltbar über `OCCASIONS_ENABLED` / `RESURFACE_ENABLED` |
 | Anreicherung | der Eintrag **+ eine Websuche** (läuft server-seitig bei Anthropic und fragt das öffentliche Web) |
 
 Kurz: Sobald Claude antwortet, fließen die **abgefragten Notizinhalte** als Kontext zu Anthropic;
@@ -259,8 +276,11 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
   standardmäßig **nicht zum Modelltraining** verwendet (begrenzte Aufbewahrung zur
   Missbrauchserkennung; Zero-Data-Retention auf Anfrage möglich) — Details in Anthropics aktueller
   Data-Policy.
-- **Proaktive Briefings sind opt-in** (`DIGEST_ENABLED` / `REVIEW_ENABLED`, Default aus) — ohne dein
-  Zutun geht dadurch nichts an Anthropic.
+- **Digest & Review sind opt-in** (`DIGEST_ENABLED` / `REVIEW_ENABLED`, Default aus) — ohne dein
+  Zutun geht dadurch nichts an Anthropic. **Anlass- und Ideen-Anstupser sind dagegen ab Werk an**
+  (`OCCASIONS_ENABLED` / `RESURFACE_ENABLED`), weil sie nur dann helfen, wenn sie von selbst
+  kommen; sie melden sich aber nur, wenn es tatsächlich einen fälligen Anlass bzw. eine
+  liegengebliebene Idee gibt.
 - **Das Web-Dashboard hat keine Authentifizierung** — nur für localhost/vertrauenswürdiges Netz
   gedacht; nicht offen ins Internet stellen (sonst Reverse-Proxy mit Login oder VPN davorschalten).
 - Der Bot ist **deny-by-default** (nur deine Telegram-User-ID darf ihn nutzen).
@@ -281,7 +301,9 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
 - **Seit v1.2 (aktueller Stand):** Einträge & Projekte im Dashboard **anlegen**; erledigte Todos
   standardmäßig **ausblenden** (Umschalter); **Duplikat-Erkennung beim Erfassen** (aktualisiert
   ein passendes offenes Todo statt es zu duplizieren, wenn eine Nachricht eindeutig eine
-  Aktualisierung ist); Dashboard-Fälligkeiten werden jetzt **korrekt in `TIMEZONE`** angezeigt.
+  Aktualisierung ist); Dashboard-Fälligkeiten werden jetzt **korrekt in `TIMEZONE`** angezeigt;
+  **wiederkehrende Anlässe** (`occasions`) mit jährlicher Vorlauf-Erinnerung samt Ideen aus den
+  Notizen zur Person (`/occasions`) und **wöchentliche Ideen-Auffrischung** (`/ideas`).
 - **Geplant:** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
   wiederkehrende Todos, Relevanz-Aging fürs RAG-Ranking, Health-/Doctor-Check; optional:
   Dashboard-Login und ein Metrik-Backend/Tracing.

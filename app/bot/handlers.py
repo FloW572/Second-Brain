@@ -4,6 +4,8 @@ import logging
 import os
 import tempfile
 from contextlib import asynccontextmanager
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from telegram import Update
 from telegram.constants import ChatAction
@@ -14,6 +16,8 @@ from app.digest import send_digest, send_learned, send_review
 from app.documents import parse_caption, store_document
 from app.ingest import capture
 from app.ingest.projects import resolve_project
+from app.nudges import send_idea_resurface
+from app.occasions import format_occasion, list_occasions
 from app.query.agent import answer
 from app.transcribe import transcribe_file
 from app.usage import usage_report
@@ -29,8 +33,11 @@ WELCOME = (
     "• „Was soll ich heute zuerst machen?“\n"
     "• „Welche Ideen habe ich zum Thema X?“\n"
     "• „Zeig mir offene Todos für Projekt Y.“\n\n"
+    "Wiederkehrende Anlässe merke ich mir von selbst: „Luisa hat am 17. Mai Geburtstag“ — "
+    "ich melde mich rechtzeitig vorher mit Ideen aus deinen Notizen zu ihr.\n\n"
     "Ich behalte den Gesprächskontext für Rückfragen. /digest = Tagesüberblick, "
-    "/review = Wochenrückblick, /recently_learned = was du zuletzt gelernt hast, "
+    "/review = Wochenrückblick, /occasions = anstehende Anlässe, /ideas = liegengebliebene "
+    "Idee hochholen, /recently_learned = was du zuletzt gelernt hast, "
     "/stats = Nutzung & Kosten, /reset = neues Gespräch."
 )
 
@@ -131,6 +138,42 @@ async def learned_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                                   context.bot_data["anthropic"], settings)
     if not sent:
         await update.message.reply_text("⚠️ Konnte den Lern-Rückblick nicht erstellen.")
+
+
+async def occasions_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Alle gemerkten Anlässe, der nächste zuerst."""
+    settings = context.bot_data["settings"]
+    if not _is_allowed(update.effective_user.id, settings):
+        await update.message.reply_text("⛔ Nicht berechtigt.")
+        return
+    today = datetime.now(ZoneInfo(settings.timezone)).date()
+    occasions = await list_occasions(context.bot_data["pool"], today)
+    if not occasions:
+        await update.message.reply_text(
+            "📭 Noch keine Anlässe gemerkt.\n"
+            "Schick mir einfach „Luisa hat am 17. Mai Geburtstag“ — ich erinnere dich dann "
+            "jedes Jahr rechtzeitig vorher, mit Ideen aus deinen Notizen zu ihr."
+        )
+        return
+    await update.message.reply_text(
+        "🗓️ Deine Anlässe:\n\n" + "\n".join(format_occasion(o) for o in occasions)
+    )
+
+
+async def ideas_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Eine liegengebliebene Idee sofort hochholen (sonst wöchentlich automatisch)."""
+    settings = context.bot_data["settings"]
+    if not _is_allowed(update.effective_user.id, settings):
+        await update.message.reply_text("⛔ Nicht berechtigt.")
+        return
+    async with _keep_typing(context.bot, update.effective_chat.id):
+        sent = await send_idea_resurface(context.bot, context.bot_data["pool"],
+                                         context.bot_data["anthropic"], settings)
+    if not sent:
+        await update.message.reply_text(
+            f"🤷 Gerade liegt keine Idee herum, die älter als "
+            f"{settings.resurface_min_age_days} Tage und noch nicht vorgeschlagen ist."
+        )
 
 
 async def _handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE,
