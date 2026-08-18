@@ -213,6 +213,26 @@ pytest
 Die Unit-Tests decken reine Logik ab (Normalisierung, RRF-Fusion, Vektor-Literal, Zeit-Parsing,
 Kostenschätzung, Eval-Metriken); sie brauchen weder DB noch API.
 
+### Integrationstests gegen eine echte Datenbank
+Was nur Postgres beantworten kann — die SQL der Anlässe und der Ideen-Auffrischung, das
+Zusammenspiel mit dem `updated_at`-Trigger — prüft
+[`tests/test_occasions_db.py`](tests/test_occasions_db.py). Diese Tests **überspringen sich
+automatisch**, solange `TEST_DATABASE_URL` nicht gesetzt ist; die CI bleibt dadurch
+datenbankfrei. Zum Ausführen:
+
+```bash
+pip install "psycopg[binary,pool]" pytest
+export TEST_DATABASE_URL="postgresql://secondbrain:secondbrain@localhost:5432/secondbrain"
+pytest tests/test_occasions_db.py -v
+```
+
+Die Datenbank muss dabei alle Migrationen bis `007` haben. Alle Testdaten tragen das Präfix
+`IT-TEST` und werden vor und nach jedem Test gezielt wieder entfernt — vorhandene Einträge
+fasst der Test nicht an. Eine eigene Test-Datenbank ist trotzdem die sauberere Wahl.
+
+Nach Änderungen an Queries oder am Schema bitte laufen lassen: der `updated_at`-Fehler, den
+`migrations/007` behebt, wäre von den Unit-Tests nie gefunden worden.
+
 ## Evals
 Zusätzlich zu den Unit-Tests gibt es einen **Eval-Harness** ([`evals/`](evals/)), der die
 **Qualität der modellabhängigen Schritte** auf kleinen gelabelten Datensätzen misst (Scorecard):
