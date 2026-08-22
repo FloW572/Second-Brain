@@ -327,7 +327,10 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
   ein passendes offenes Todo statt es zu duplizieren, wenn eine Nachricht eindeutig eine
   Aktualisierung ist); Dashboard-Fälligkeiten werden jetzt **korrekt in `TIMEZONE`** angezeigt;
   **wiederkehrende Anlässe** (`occasions`) mit jährlicher Vorlauf-Erinnerung samt Ideen aus den
-  Notizen zur Person (`/occasions`) und **wöchentliche Ideen-Auffrischung** (`/ideas`).
+  Notizen zur Person (`/occasions`) und **wöchentliche Ideen-Auffrischung** (`/ideas`); die
+  Anlass-Erkennung beim Erfassen (z.B. „Luisa hat am 17. Mai Geburtstag") ist jetzt **zuverlässig**
+  — die Regel steht explizit im Extraktions-Prompt statt nur im Tool-Schema, das die Extraktion
+  (Haiku) sonst inkonsistent befolgte.
 - **Geplant:** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
   wiederkehrende Todos, Relevanz-Aging fürs RAG-Ranking, Health-/Doctor-Check; optional:
   Dashboard-Login und ein Metrik-Backend/Tracing.
