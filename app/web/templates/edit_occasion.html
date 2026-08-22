@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Anlass #{{ occasion.id }} bearbeiten · Second Brain{% endblock %}
+{% block content %}
+<form class="edit" method="post" action="/occasions/edit/{{ occasion.id }}">
+  <h2 style="margin:0 0 4px">✎ Anlass #{{ occasion.id }} bearbeiten</h2>
+
+  <label>Bezeichnung
+    <input type="text" name="label" value="{{ occasion.label }}" required>
+  </label>
+
+  <label>Person
+    <input type="text" name="person" value="{{ occasion.person or '' }}">
+  </label>
+
+  <label>Art
+    <select name="kind">
+      <option value="birthday" {{ 'selected' if occasion.kind == 'birthday' else '' }}>🎂 Geburtstag</option>
+      <option value="anniversary" {{ 'selected' if occasion.kind == 'anniversary' else '' }}>💞 Jahrestag</option>
+      <option value="custom" {{ 'selected' if occasion.kind == 'custom' else '' }}>📌 Sonstig</option>
+    </select>
+  </label>
+
+  <label>Monat
+    <input type="number" name="month" value="{{ occasion.month }}" min="1" max="12" required>
+  </label>
+
+  <label>Tag
+    <input type="number" name="day" value="{{ occasion.day }}" min="1" max="31" required>
+  </label>
+
+  <label>Vorlauf (Tage)
+    <input type="number" name="lead_days" value="{{ occasion.lead_days }}" min="0">
+  </label>
+
+  <label>Projekt
+    <input type="text" name="project" value="{{ occasion.project or '' }}">
+  </label>
+
+  <div class="form-actions">
+    <button class="btn ok" type="submit">Speichern</button>
+    <a class="btn" href="/occasions">Abbrechen</a>
+  </div>
+</form>
+{% endblock %}

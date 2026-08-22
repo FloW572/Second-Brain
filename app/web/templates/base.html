@@ -253,6 +253,7 @@
       <div class="nav-label">Verwalten</div>
       <a href="/projects" class="{{ 'active' if path.startswith('/projects') or qproj else '' }}">📁 Projekte</a>
       <a href="/documents" class="{{ 'active' if path.startswith('/documents') else '' }}">📎 Dateien</a>
+      <a href="/occasions" class="{{ 'active' if path.startswith('/occasions') else '' }}">🎂 Anlässe</a>
     </nav>
   </aside>
   <main>{% block content %}{% endblock %}</main>

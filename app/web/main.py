@@ -6,6 +6,7 @@ reminder reset stay identical across both interfaces.
 """
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
@@ -29,6 +30,14 @@ from app.documents import (
 from app.duetime import parse_due
 from app.ingest.embed import embed_text, to_vector_literal
 from app.ingest.projects import resolve_project
+from app.occasions import (
+    KIND_LABEL,
+    add_occasion,
+    delete_occasion,
+    get_occasion,
+    list_occasions,
+    update_occasion,
+)
 from app.query.tools import (
     _complete_item,
     _create_project,
@@ -45,6 +54,7 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 TYPE_EMOJI = {"todo": "✅", "idea": "💡", "note": "📝", "reference": "🔗"}
 PRIORITY_LABEL = {1: "hoch", 2: "mittel", 3: "niedrig"}
+OCCASION_EMOJI = {"birthday": "🎂", "anniversary": "💞", "custom": "📌"}
 
 _pool = None
 
@@ -247,6 +257,65 @@ async def delete_project(pid: int):
     # (no items, no files), so a non-empty project simply stays put.
     await _delete_project(_pool, settings, {"id": pid})
     return RedirectResponse("/projects", status_code=303)
+
+
+@app.get("/occasions")
+async def occasions_view(request: Request):
+    today = datetime.now(ZoneInfo(settings.timezone)).date()
+    occasions = await list_occasions(_pool, today, limit=200)
+    return templates.TemplateResponse(
+        request=request, name="occasions.html",
+        context={"occasions": occasions, "occasion_emoji": OCCASION_EMOJI,
+                 "kind_label": KIND_LABEL},
+    )
+
+
+@app.post("/occasions/create")
+async def create_occasion(label: str = Form(...), person: str = Form(""),
+                          kind: str = Form("birthday"), month: int = Form(...),
+                          day: int = Form(...), lead_days: int = Form(14),
+                          project: str = Form("")):
+    label = label.strip()
+    if label:
+        project_id = None
+        if project.strip():
+            async with _pool.connection() as conn:
+                project_id, _ = await resolve_project(conn, project.strip())
+        await add_occasion(_pool, label, month, day, person=person.strip() or None,
+                           kind=kind, lead_days=lead_days, project_id=project_id)
+    return RedirectResponse("/occasions", status_code=303)
+
+
+@app.get("/occasions/edit/{occasion_id}")
+async def edit_occasion_form(request: Request, occasion_id: int):
+    today = datetime.now(ZoneInfo(settings.timezone)).date()
+    occasion = await get_occasion(_pool, occasion_id, today)
+    if not occasion:
+        return RedirectResponse("/occasions", status_code=303)
+    return templates.TemplateResponse(
+        request=request, name="edit_occasion.html", context={"occasion": occasion},
+    )
+
+
+@app.post("/occasions/edit/{occasion_id}")
+async def edit_occasion_apply(occasion_id: int, label: str = Form(...),
+                              person: str = Form(""), kind: str = Form("birthday"),
+                              month: int = Form(...), day: int = Form(...),
+                              lead_days: int = Form(14), project: str = Form("")):
+    args = {"label": label.strip(), "person": person.strip() or None,
+           "kind": kind, "month": month, "day": day, "lead_days": lead_days}
+    if project.strip():
+        async with _pool.connection() as conn:
+            project_id, _ = await resolve_project(conn, project.strip())
+        args["project_id"] = project_id
+    await update_occasion(_pool, occasion_id, **args)
+    return RedirectResponse("/occasions", status_code=303)
+
+
+@app.post("/occasions/{occasion_id}/delete")
+async def delete_occasion_route(occasion_id: int):
+    await delete_occasion(_pool, occasion_id)
+    return RedirectResponse("/occasions", status_code=303)
 
 
 @app.get("/new")

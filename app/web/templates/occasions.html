@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Anlässe · Second Brain{% endblock %}
+{% block content %}
+<h1 class="page-head">🎂 Anlässe</h1>
+
+<form class="new-project" method="post" action="/occasions/create">
+  <input type="text" name="label" placeholder="Bezeichnung, z.B. Luisa Geburtstag…" required>
+  <input type="text" name="person" placeholder="Person (optional)">
+  <select name="kind">
+    <option value="birthday">🎂 Geburtstag</option>
+    <option value="anniversary">💞 Jahrestag</option>
+    <option value="custom">📌 Sonstig</option>
+  </select>
+  <input type="number" name="month" placeholder="Monat" min="1" max="12" required style="max-width:90px">
+  <input type="number" name="day" placeholder="Tag" min="1" max="31" required style="max-width:80px">
+  <input type="number" name="lead_days" placeholder="Vorlauf (Tage)" value="14" min="0" style="max-width:140px">
+  <button class="btn ok" type="submit">＋ Anlegen</button>
+</form>
+
+<div class="cards">
+{% if not occasions %}
+  <p class="empty">Noch keine Anlässe.</p>
+{% endif %}
+
+{% for o in occasions %}
+<div class="card">
+  <div class="card-main">
+    <div class="title">{{ occasion_emoji.get(o.kind, '📌') }} {{ o.label }}
+      <span class="id">#{{ o.id }}</span>
+    </div>
+    {% if o.person %}<div class="content">{{ o.person }}</div>{% endif %}
+    <div class="meta">
+      <span class="badge">{{ '%02d'|format(o.day) }}.{{ '%02d'|format(o.month) }}.</span>
+      <span class="badge due">
+        {% if o.days_until == 0 %}heute
+        {%- elif o.days_until == 1 %}morgen
+        {%- else %}in {{ o.days_until }} Tagen{% endif %}
+      </span>
+      <span class="badge">Vorlauf {{ o.lead_days }} Tage</span>
+      {% if o.project %}<span class="badge">📁 {{ o.project }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/occasions/edit/{{ o.id }}" title="Bearbeiten">✏️</a>
+    <form method="post" action="/occasions/{{ o.id }}/delete"
+          onsubmit="return confirm('Anlass „{{ o.label }}“ löschen?')">
+      <button class="btn danger" title="Löschen">🗑</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

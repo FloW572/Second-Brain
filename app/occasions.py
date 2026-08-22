@@ -133,6 +133,54 @@ async def add_occasion(pool, label: str, month: int, day: int, *, person: str | 
             "days_until": days_until(month, day, today)}
 
 
+async def get_occasion(pool, occasion_id: int, today: date) -> dict | None:
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(_SELECT + " WHERE o.id = %s", (occasion_id,))
+        row = await cur.fetchone()
+    return _row_to_occasion(row, today) if row else None
+
+
+async def update_occasion(pool, occasion_id: int, *, label: str | None = None,
+                          person: str | None = None, kind: str | None = None,
+                          month: int | None = None, day: int | None = None,
+                          lead_days: int | None = None, notes: str | None = None,
+                          project_id: int | None = None) -> dict:
+    """Update an occasion in place by id (unlike add_occasion, which upserts by label —
+    not useful here since editing may itself change the label)."""
+    if month is not None and not 1 <= month <= 12:
+        return {"updated": False, "reason": "month must be 1-12"}
+    if day is not None and not 1 <= day <= 31:
+        return {"updated": False, "reason": "day must be 1-31"}
+    if kind is not None and kind not in KINDS:
+        kind = "custom"
+
+    sets: list[str] = []
+    params: list = []
+    for column, value in (("label", label), ("person", person), ("kind", kind),
+                          ("month", month), ("day", day), ("lead_days", lead_days),
+                          ("notes", notes), ("project_id", project_id)):
+        if value is not None:
+            sets.append(f"{column} = %s")
+            params.append(value)
+    if month is not None or day is not None:
+        # The date moved — clear so a fresh lead-time reminder can fire for it.
+        sets.append("last_notified_on = NULL")
+    if not sets:
+        return {"updated": False, "reason": "no fields to update"}
+
+    params.append(occasion_id)
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            f"UPDATE occasions SET {', '.join(sets)} WHERE id = %s RETURNING label",
+            params,
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+    if not row:
+        return {"updated": False, "reason": "not found"}
+    return {"updated": True, "id": occasion_id, "label": row[0]}
+
+
 async def delete_occasion(pool, occasion_id: int) -> dict:
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute("DELETE FROM occasions WHERE id = %s RETURNING label", (occasion_id,))
