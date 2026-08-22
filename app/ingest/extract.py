@@ -75,7 +75,11 @@ async def extract_structure(anthropic, text: str, settings, now: str | None = No
         f"Aktuelle Zeit: {now} (Zeitzone {settings.timezone}). Du extrahierst aus einer kurzen "
         f"Notiz strukturierte Felder für ein persönliches Second-Brain-System. Löse relative "
         f"Datums- und Zeitangaben ('morgen', 'nächste Woche', 'Freitag', 'heute 19 Uhr') gegen "
-        f"die aktuelle Zeit auf. Halte den Titel kurz und prägnant. Antworte ausschließlich über das Tool."
+        f"die aktuelle Zeit auf. Halte den Titel kurz und prägnant. "
+        f"Nennt die Nachricht ein jährlich WIEDERKEHRENDES Datum einer Person (Geburtstag, "
+        f"Jahrestag, Namenstag — z.B. 'Luisa hat am 17. Mai Geburtstag'), fülle IMMER das "
+        f"occasion-Feld; due_at bleibt dann leer, weil es kein einmaliger Termin ist. "
+        f"Antworte ausschließlich über das Tool."
     )
     if candidates:
         cand_lines = "\n".join(
