@@ -142,7 +142,8 @@ async def index(request: Request, type: str = "", q: str = "", project: str = ""
         context={"items": items, "active_type": type, "q": q,
                  "project_name": project_name, "project_id": project_id,
                  "documents": documents, "type_emoji": TYPE_EMOJI,
-                 "show_done": show_done, "toggle_url": toggle_url},
+                 "show_done": show_done, "toggle_url": toggle_url,
+                 "projects": await _all_projects()},
     )
 
 
@@ -387,6 +388,30 @@ async def edit_apply(item_id: int, title: str = Form(...), type: str = Form(...)
         args["project"] = project.strip()
     await _update_item(_pool, settings, args)
     return RedirectResponse("/", status_code=303)
+
+
+def _parse_bulk_ids(ids: str) -> list[int]:
+    return [int(i) for i in ids.split(",") if i.strip().isdigit()]
+
+
+@app.post("/bulk/project")
+async def bulk_assign_project(ids: str = Form(""), project: str = Form(""),
+                              return_to: str = Form("/")):
+    id_list = _parse_bulk_ids(ids)
+    if id_list and project.strip():
+        for item_id in id_list:
+            await _update_item(_pool, settings, {"id": item_id, "project": project.strip()})
+    return RedirectResponse(_safe_back(return_to), status_code=303)
+
+
+@app.post("/bulk/clear-project")
+async def bulk_clear_project(ids: str = Form(""), return_to: str = Form("/")):
+    id_list = _parse_bulk_ids(ids)
+    if id_list:
+        async with _pool.connection() as conn, conn.cursor() as cur:
+            await cur.execute("UPDATE items SET project_id = NULL WHERE id = ANY(%s)", (id_list,))
+            await conn.commit()
+    return RedirectResponse(_safe_back(return_to), status_code=303)
 
 
 @app.post("/complete/{item_id}")

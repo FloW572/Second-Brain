@@ -87,7 +87,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
 | **Ideen-Auffrischung** | wöchentlich wird **eine** lange liegengebliebene Idee hochgeholt, mit passenden Personen aus den Notizen verknüpft und mit nächstem Schritt vorgeschlagen; `/ideas` sofort (`RESURFACE_ENABLED`) |
 | **Lern-Rückblick** | `/recently_learned` — fasst zusammen, was du zuletzt gelernt/festgehalten hast (neue Notizen/Ideen + erledigte Todos der letzten 7 Tage) |
 | **Dokumente** | Dateien (xlsx/PDF/Bilder) je Projekt — per Telegram **und** Dashboard; mit freiem **Kommentar** je Datei (Bildunterschrift; `#Projekt` ordnet zu). Bytes im Volume, Metadaten in der DB |
-| **Web-Dashboard** | modernes, responsives FastAPI-UI mit **Sidebar-Navigation** und automatischem **Hell-/Dunkelmodus** — Einträge & Projekte **anlegen**, browsen, suchen, bearbeiten, Dokumente verwalten (Port 8001) |
+| **Web-Dashboard** | modernes, responsives FastAPI-UI mit **Sidebar-Navigation** und automatischem **Hell-/Dunkelmodus** — Einträge & Projekte **anlegen**, browsen, suchen, bearbeiten, Dokumente **und Anlässe** verwalten, per Mehrfachauswahl Projekte bulk zuweisen (Port 8001) |
 | **Kosten & Nutzung** | pro Anthropic-Aufruf werden Tokens, Latenz und geschätzte Kosten geloggt **und in der DB persistiert**; `/stats` zeigt Summen **heute/diesen Monat** je Modell + Fehler-/Rate-Limit-Zähler; optionale Warnschwelle (`COST_WARN_THRESHOLD_USD`) |
 
 ### Agent-Tools
@@ -164,6 +164,10 @@ Neben dem Bot läuft eine Browser-Oberfläche (eigener FastAPI-Dienst) unter
 - semantische Suche (dieselbe hybride Suche wie im Bot)
 - Einträge **bearbeiten, erledigen, löschen** per Klick
 - erledigte Todos sind standardmäßig **ausgeblendet** — ein Umschalter blendet sie bei Bedarf ein
+- **Mehrfachauswahl:** mehrere Einträge per Checkbox markieren und **in einem Schritt einem
+  Projekt zuweisen oder daraus entfernen** — praktisch, um z.B. alles unter „Ohne Projekt"
+  gesammelt einzusortieren
+- **Anlässe** (Geburtstage/Jahrestage) anlegen, bearbeiten und löschen — vorher nur per Telegram-Chat möglich
 - **Projekte** durchklicken, **umbenennen** und je Projekt **Dokumente** (xlsx/PDF/Bilder) hochladen & herunterladen; **leere** Projekte (keine Einträge, keine Dateien) per Klick löschen
 - **Kommentare** je Datei direkt im Web bearbeiten (und beim Hochladen gleich mitgeben)
 - **Dateien**-Ansicht: alle Dokumente auf einen Blick; Projekt-Zuordnung per Dropdown ändern
@@ -330,7 +334,9 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
   Notizen zur Person (`/occasions`) und **wöchentliche Ideen-Auffrischung** (`/ideas`); die
   Anlass-Erkennung beim Erfassen (z.B. „Luisa hat am 17. Mai Geburtstag") ist jetzt **zuverlässig**
   — die Regel steht explizit im Extraktions-Prompt statt nur im Tool-Schema, das die Extraktion
-  (Haiku) sonst inkonsistent befolgte.
+  (Haiku) sonst inkonsistent befolgte; **Anlässe lassen sich jetzt auch im Dashboard verwalten**
+  (anlegen/bearbeiten/löschen, vorher nur per Telegram-Chat); **Mehrfachauswahl im Dashboard**,
+  um mehrere Einträge auf einmal einem Projekt zuzuweisen oder daraus zu entfernen.
 - **Geplant:** proaktive Vorschläge (z.B. „Du hast 3 Ideen zu RAG — zusammenfassen?"),
   wiederkehrende Todos, Relevanz-Aging fürs RAG-Ranking, Health-/Doctor-Check; optional:
   Dashboard-Login und ein Metrik-Backend/Tracing.

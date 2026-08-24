@@ -53,6 +53,29 @@
 </div>
 {% endif %}
 
+{% if items %}
+<div class="select-all">
+  <a href="#" onclick="selectAllBulk(); return false;">☑️ Alle auswählen</a>
+</div>
+{% endif %}
+
+<form id="bulk-form" method="post" onsubmit="return submitBulk()">
+  <input type="hidden" name="ids" id="bulk-ids">
+  <input type="hidden" name="return_to"
+         value="{{ request.url.path }}{{ '?' + request.url.query if request.url.query else '' }}">
+  <div class="bulk-bar" id="bulk-bar" hidden>
+    <span id="bulk-count"></span>
+    <input type="text" name="project" placeholder="Projekt zuweisen…" list="project-datalist">
+    <datalist id="project-datalist">
+      {% for p in projects %}<option value="{{ p.name }}">{% endfor %}
+    </datalist>
+    <button class="btn ok" type="submit" formaction="/bulk/project">📁 Zuweisen</button>
+    <button class="btn" type="submit" formaction="/bulk/clear-project"
+            onclick="return confirm('Projekt bei den ausgewählten Einträgen entfernen?')">✕ Projekt entfernen</button>
+    <button class="btn" type="button" onclick="clearBulkSelection()">Auswahl aufheben</button>
+  </div>
+</form>
+
 <div class="cards">
   {% if not items %}
   <p class="empty">Keine Einträge{% if q %} für „{{ q }}“{% endif %}.</p>
@@ -60,7 +83,12 @@
   {% for item in items %}
   <article class="card type-{{ item.type }} {{ 'done' if item.status == 'done' else '' }}">
     <div class="card-main">
-      <div class="title">{{ item.emoji }} <span class="id">#{{ item.id }}</span> {{ item.title }}</div>
+      <div class="title">
+        <label class="bulk-select">
+          <input type="checkbox" class="bulk-check" value="{{ item.id }}" onchange="refreshBulkBar()">
+        </label>
+        {{ item.emoji }} <span class="id">#{{ item.id }}</span> {{ item.title }}
+      </div>
       {% if item.content %}<div class="content">{{ item.content }}</div>{% endif %}
       <div class="meta">
         {% if item.status %}<span class="badge status-{{ item.status }}">{{ item.status }}</span>{% endif %}
@@ -83,4 +111,28 @@
   </article>
   {% endfor %}
 </div>
+
+<script>
+  function bulkChecked() {
+    return Array.from(document.querySelectorAll('.bulk-check:checked')).map(c => c.value);
+  }
+  function refreshBulkBar() {
+    const ids = bulkChecked();
+    const bar = document.getElementById('bulk-bar');
+    document.getElementById('bulk-count').textContent = ids.length + ' ausgewählt';
+    bar.hidden = ids.length === 0;
+  }
+  function submitBulk() {
+    document.getElementById('bulk-ids').value = bulkChecked().join(',');
+    return true;
+  }
+  function clearBulkSelection() {
+    document.querySelectorAll('.bulk-check:checked').forEach(c => c.checked = false);
+    refreshBulkBar();
+  }
+  function selectAllBulk() {
+    document.querySelectorAll('.bulk-check').forEach(c => c.checked = true);
+    refreshBulkBar();
+  }
+</script>
 {% endblock %}
