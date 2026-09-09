@@ -62,6 +62,17 @@ def run(main):
     return asyncio.run(_run())
 
 
+def _mine(rows):
+    """Nur die Zeilen dieses Tests.
+
+    Die Query-Funktionen liefern alles, was in der Datenbank steht. Ohne diesen Filter
+    würde ein Test gegen eine befüllte Datenbank fremde Einträge prüfen — und, schlimmer,
+    ein `_mark_nudged` darauf schreiben. Deshalb IMMER filtern, bevor eine Zeile
+    weiterverwendet wird.
+    """
+    return [r for r in rows if str(r.get("title") or r.get("label") or "").startswith(PREFIX)]
+
+
 async def _cleanup(pool):
     async with pool.connection() as conn, conn.cursor() as cur:
         # ILIKE, damit auch eine im Test veränderte Schreibweise sicher mit aufgeräumt wird
@@ -71,7 +82,7 @@ async def _cleanup(pool):
         await conn.commit()
 
 
-async def _seed_birthday(pool, day=17, month=5, lead_days=14):
+async def _seed_birthday(pool, day=10, month=6, lead_days=14):
     return await add_occasion(pool, f"{PREFIX} Geburtstag", month, day,
                               person=f"{PREFIX} Person", kind="birthday",
                               lead_days=lead_days)
@@ -82,18 +93,18 @@ async def _seed_birthday(pool, day=17, month=5, lead_days=14):
 def test_occasion_roundtrip_maps_every_field():
     async def main(pool):
         await _seed_birthday(pool)
-        found = [o for o in await list_occasions(pool, date(2026, 5, 3))
+        found = [o for o in await list_occasions(pool, date(2026, 5, 27))
                  if o["label"].startswith(PREFIX)]
         assert len(found) == 1
         return found[0]
 
     occasion = run(main)
-    assert occasion["month"] == 5
-    assert occasion["day"] == 17
+    assert occasion["month"] == 6
+    assert occasion["day"] == 10
     assert occasion["lead_days"] == 14
     assert occasion["person"] == f"{PREFIX} Person"
     assert occasion["kind"] == "birthday"
-    assert occasion["next_date"] == "2026-05-17"
+    assert occasion["next_date"] == "2026-06-10"
     assert occasion["days_until"] == 14
 
 
@@ -115,15 +126,15 @@ def test_same_label_updates_instead_of_duplicating():
     async def main(pool):
         await _seed_birthday(pool)
         # andere Schreibweise: das Label wird per ILIKE gematcht
-        result = await add_occasion(pool, f"{PREFIX} geburtstag".lower(), 5, 18, lead_days=21)
-        found = [o for o in await list_occasions(pool, date(2026, 5, 3))
+        result = await add_occasion(pool, f"{PREFIX} geburtstag".lower(), 6, 11, lead_days=21)
+        found = [o for o in await list_occasions(pool, date(2026, 5, 27))
                  if o["label"].startswith(PREFIX)]
         return result, found
 
     result, found = run(main)
     assert result["updated"] is True
     assert len(found) == 1, "Label-Treffer darf keinen zweiten Anlass anlegen"
-    assert (found[0]["month"], found[0]["day"]) == (5, 18)
+    assert (found[0]["month"], found[0]["day"]) == (6, 11)
     assert found[0]["lead_days"] == 21
     assert found[0]["person"] == f"{PREFIX} Person", "person darf nicht verloren gehen"
 
@@ -163,15 +174,12 @@ def test_reminder_fires_once_per_year():
     async def main(pool):
         created = await _seed_birthday(pool)
 
-        def mine(rows):
-            return [r for r in rows if r["label"].startswith(PREFIX)]
-
-        too_early = mine(await due_occasions(pool, date(2026, 5, 2)))
-        on_time = mine(await due_occasions(pool, date(2026, 5, 3)))
-        await mark_notified(pool, created["id"], date(2026, 5, 3))
-        after = mine(await due_occasions(pool, date(2026, 5, 6)))
-        on_the_day = mine(await due_occasions(pool, date(2026, 5, 17)))
-        next_year = mine(await due_occasions(pool, date(2027, 5, 3)))
+        too_early = _mine(await due_occasions(pool, date(2026, 5, 26)))
+        on_time = _mine(await due_occasions(pool, date(2026, 5, 27)))
+        await mark_notified(pool, created["id"], date(2026, 5, 27))
+        after = _mine(await due_occasions(pool, date(2026, 5, 30)))
+        on_the_day = _mine(await due_occasions(pool, date(2026, 6, 10)))
+        next_year = _mine(await due_occasions(pool, date(2027, 5, 27)))
         return too_early, on_time, after, on_the_day, next_year
 
     too_early, on_time, after, on_the_day, next_year = run(main)
@@ -204,7 +212,7 @@ def test_only_dormant_ideas_are_resurfaced():
         await _seed_ideas(pool)
         return await _dormant_ideas(pool, 30, 90, 10)
 
-    ideas = [i for i in run(main) if i["title"].startswith(PREFIX)]
+    ideas = _mine(run(main))
     assert [i["title"] for i in ideas] == [f"{PREFIX} Alte Idee"], \
         "frische Ideen und Todos dürfen nicht auflaufen"
     assert ideas[0]["age_days"] == 120
@@ -214,23 +222,23 @@ def test_only_dormant_ideas_are_resurfaced():
 def test_cooldown_silences_a_nudged_idea():
     async def main(pool):
         await _seed_ideas(pool)
-        first = await _dormant_ideas(pool, 30, 90, 10)
+        first = _mine(await _dormant_ideas(pool, 30, 90, 10))
         await _mark_nudged(pool, first[0]["id"])
-        return first, await _dormant_ideas(pool, 30, 90, 10), \
-            await _dormant_ideas(pool, 30, 0, 10)
+        return (_mine(await _dormant_ideas(pool, 30, 90, 10)),
+                _mine(await _dormant_ideas(pool, 30, 0, 10)))
 
-    first, within_cooldown, after_cooldown = run(main)
-    assert [i for i in within_cooldown if i["title"].startswith(PREFIX)] == []
-    assert len([i for i in after_cooldown if i["title"].startswith(PREFIX)]) == 1
+    within_cooldown, after_cooldown = run(main)
+    assert within_cooldown == []
+    assert len(after_cooldown) == 1
 
 
 def test_nudging_does_not_make_an_idea_look_recently_edited():
     """Regression zu migrations/007: der Marker darf updated_at nicht auffrischen."""
     async def main(pool):
         await _seed_ideas(pool)
-        idea = (await _dormant_ideas(pool, 30, 90, 10))[0]
+        idea = _mine(await _dormant_ideas(pool, 30, 90, 10))[0]
         await _mark_nudged(pool, idea["id"])
-        return (await _dormant_ideas(pool, 30, 0, 10))[0]
+        return _mine(await _dormant_ideas(pool, 30, 0, 10))[0]
 
     assert run(main)["age_days"] == 120, \
         "nudged_at hat updated_at aufgefrischt — migrations/007 fehlt in dieser Datenbank"

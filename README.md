@@ -62,7 +62,7 @@ Handy ──Telegram──▶ Bot (Polling) ──▶ Backend (Python)      Brow
   **eine** proaktive Telegram-Nachricht pro Todo.
 - **Proaktiv:** täglicher **Digest** (Morgenüberblick) und wöchentliches **Review** (Rückblick +
   Fokus), automatisch zur eingestellten Zeit oder on-demand per `/digest` / `/review`.
-- **Anlässe:** „Luisa hat am 17. Mai Geburtstag" wird als **wiederkehrender Anlass** gemerkt (nicht
+- **Anlässe:** „Anna hat am 1. Januar Geburtstag" wird als **wiederkehrender Anlass** gemerkt (nicht
   als einmaliges Todo). Der Bot meldet sich jedes Jahr **mit Vorlauf** (Default 14 Tage) — und
   liefert direkt **Geschenk-/Aktionsideen aus den gespeicherten Notizen zu der Person** mit,
   jeweils mit der id der Notiz, auf der sie beruhen.
@@ -332,7 +332,7 @@ die Anreicherung geht zusätzlich ins öffentliche Web.
   Aktualisierung ist); Dashboard-Fälligkeiten werden jetzt **korrekt in `TIMEZONE`** angezeigt;
   **wiederkehrende Anlässe** (`occasions`) mit jährlicher Vorlauf-Erinnerung samt Ideen aus den
   Notizen zur Person (`/occasions`) und **wöchentliche Ideen-Auffrischung** (`/ideas`); die
-  Anlass-Erkennung beim Erfassen (z.B. „Luisa hat am 17. Mai Geburtstag") ist jetzt **zuverlässig**
+  Anlass-Erkennung beim Erfassen (z.B. „Anna hat am 1. Januar Geburtstag") ist jetzt **zuverlässig**
   — die Regel steht explizit im Extraktions-Prompt statt nur im Tool-Schema, das die Extraktion
   (Haiku) sonst inkonsistent befolgte; **Anlässe lassen sich jetzt auch im Dashboard verwalten**
   (anlegen/bearbeiten/löschen, vorher nur per Telegram-Chat); **Mehrfachauswahl im Dashboard**,

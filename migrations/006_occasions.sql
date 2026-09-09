@@ -7,8 +7,8 @@
 -- im Fälligkeitsfeld: die nächste Wiederholung wird aus (month, day) berechnet.
 CREATE TABLE IF NOT EXISTS occasions (
     id               SERIAL PRIMARY KEY,
-    label            TEXT NOT NULL,                    -- "Luisa Geburtstag"
-    person           TEXT,                             -- "Luisa" — verknüpft Notizen/Projekt
+    label            TEXT NOT NULL,                    -- "Anna Geburtstag"
+    person           TEXT,                             -- "Anna" — verknüpft Notizen/Projekt
     kind             TEXT NOT NULL DEFAULT 'birthday', -- birthday | anniversary | custom
     month            SMALLINT NOT NULL CHECK (month BETWEEN 1 AND 12),
     day              SMALLINT NOT NULL CHECK (day BETWEEN 1 AND 31),
