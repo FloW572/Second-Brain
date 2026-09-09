@@ -42,12 +42,12 @@ STRUCTURE_TOOL = {
             "occasion": {
                 "type": ["object", "null"],
                 "description": "NUR setzen, wenn die Nachricht ein jährlich WIEDERKEHRENDES Datum "
-                               "nennt (Geburtstag, Jahrestag, Namenstag) — z.B. 'Luisa hat am "
-                               "17. Mai Geburtstag'. Bei einem einmaligen Termin null lassen "
+                               "nennt (Geburtstag, Jahrestag, Namenstag) — z.B. 'Anna hat am "
+                               "1. Januar Geburtstag'. Bei einem einmaligen Termin null lassen "
                                "(das gehört in due_at).",
                 "properties": {
                     "label": {"type": "string",
-                              "description": "Kurzbezeichnung, z.B. 'Luisa Geburtstag'."},
+                              "description": "Kurzbezeichnung, z.B. 'Anna Geburtstag'."},
                     "person": {"type": "string", "description": "Name der Person."},
                     "kind": {"type": "string", "enum": ["birthday", "anniversary", "custom"]},
                     "month": {"type": "integer", "description": "Monat 1-12."},
@@ -77,7 +77,7 @@ async def extract_structure(anthropic, text: str, settings, now: str | None = No
         f"Datums- und Zeitangaben ('morgen', 'nächste Woche', 'Freitag', 'heute 19 Uhr') gegen "
         f"die aktuelle Zeit auf. Halte den Titel kurz und prägnant. "
         f"Nennt die Nachricht ein jährlich WIEDERKEHRENDES Datum einer Person (Geburtstag, "
-        f"Jahrestag, Namenstag — z.B. 'Luisa hat am 17. Mai Geburtstag'), fülle IMMER das "
+        f"Jahrestag, Namenstag — z.B. 'Anna hat am 1. Januar Geburtstag'), fülle IMMER das "
         f"occasion-Feld; due_at bleibt dann leer, weil es kein einmaliger Termin ist. "
         f"Antworte ausschließlich über das Tool."
     )

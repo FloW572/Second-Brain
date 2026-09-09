@@ -58,7 +58,7 @@ CREATE INDEX IF NOT EXISTS documents_project_idx ON documents (project_id);
 -- next occurrence is derived from (month, day), and a reminder fires lead_days ahead.
 CREATE TABLE IF NOT EXISTS occasions (
     id               SERIAL PRIMARY KEY,
-    label            TEXT NOT NULL,                    -- "Luisa Geburtstag"
+    label            TEXT NOT NULL,                    -- "Anna Geburtstag"
     person           TEXT,                             -- links notes/project about that person
     kind             TEXT NOT NULL DEFAULT 'birthday', -- birthday | anniversary | custom
     month            SMALLINT NOT NULL CHECK (month BETWEEN 1 AND 12),

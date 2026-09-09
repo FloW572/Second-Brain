@@ -199,7 +199,7 @@ async def mark_notified(pool, occasion_id: int, today: date) -> None:
 
 
 def format_occasion(occasion: dict) -> str:
-    """Eine Zeile für Telegram: '🎂 #3 Luisa Geburtstag · 17.05. · in 12 Tagen'."""
+    """Eine Zeile für Telegram: '🎂 #3 Anna Geburtstag · 01.01. · in 12 Tagen'."""
     emoji = {"birthday": "🎂", "anniversary": "💞"}.get(occasion["kind"], "📌")
     left = occasion["days_until"]
     when = "heute" if left == 0 else ("morgen" if left == 1 else f"in {left} Tagen")

@@ -33,7 +33,7 @@ WELCOME = (
     "• „Was soll ich heute zuerst machen?“\n"
     "• „Welche Ideen habe ich zum Thema X?“\n"
     "• „Zeig mir offene Todos für Projekt Y.“\n\n"
-    "Wiederkehrende Anlässe merke ich mir von selbst: „Luisa hat am 17. Mai Geburtstag“ — "
+    "Wiederkehrende Anlässe merke ich mir von selbst: „Anna hat am 1. Januar Geburtstag“ — "
     "ich melde mich rechtzeitig vorher mit Ideen aus deinen Notizen zu ihr.\n\n"
     "Ich behalte den Gesprächskontext für Rückfragen. /digest = Tagesüberblick, "
     "/review = Wochenrückblick, /occasions = anstehende Anlässe, /ideas = liegengebliebene "
@@ -151,7 +151,7 @@ async def occasions_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not occasions:
         await update.message.reply_text(
             "📭 Noch keine Anlässe gemerkt.\n"
-            "Schick mir einfach „Luisa hat am 17. Mai Geburtstag“ — ich erinnere dich dann "
+            "Schick mir einfach „Anna hat am 1. Januar Geburtstag“ — ich erinnere dich dann "
             "jedes Jahr rechtzeitig vorher, mit Ideen aus deinen Notizen zu ihr."
         )
         return

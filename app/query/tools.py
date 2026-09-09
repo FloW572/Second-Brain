@@ -211,7 +211,7 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "label": {"type": "string", "description": "z.B. 'Luisa Geburtstag'."},
+                "label": {"type": "string", "description": "z.B. 'Anna Geburtstag'."},
                 "month": {"type": "integer", "description": "Monat 1-12."},
                 "day": {"type": "integer", "description": "Tag 1-31."},
                 "person": {"type": ["string", "null"],
